@@ -5,12 +5,13 @@ import { daysSince, jobTypeLabel, workModeLabel } from "@/lib/stage-e/format";
 import { Avatar } from "@/components/ui/Misc";
 import { Badge } from "@/components/ui/Badge";
 import { timeAgo } from "@/lib/utils";
+import type { SaveMode } from "@/lib/saved/queries";
 import { SaveButton } from "./SaveButton";
 
 const EMPLOYMENT: Record<JobListItem["employment"], string> = { full_time: "Full-time", part_time: "Part-time", contract: "Contract" };
 
 /** Same card design as JobCard, but driven by a real database row. */
-export function LiveJobCard({ job }: { job: JobListItem }) {
+export function LiveJobCard({ job, saveMode = "guest", saved = false }: { job: JobListItem; saveMode?: SaveMode; saved?: boolean }) {
   return (
     <article className="group relative rounded-2xl bg-white p-5 shadow-soft ring-1 ring-ink-100 transition duration-200 hover:-translate-y-0.5 hover:shadow-lift hover:ring-brand-200">
       <div className="flex items-start gap-4">
@@ -26,7 +27,7 @@ export function LiveJobCard({ job }: { job: JobListItem }) {
             {job.companyVerified && <BadgeCheck className="h-4 w-4 text-mint-600" aria-label="Verified employer" />}
           </p>
         </div>
-        <SaveButton jobId={job.id} />
+        <SaveButton jobId={job.id} mode={saveMode} initialSaved={saved} />
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">

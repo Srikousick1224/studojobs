@@ -42,4 +42,3 @@ next-env.d.ts
 
 # keep the placeholder file
 !.env.example
-studojobs/

@@ -63,14 +63,6 @@ export function Notice({ tone = "info", children }: { tone?: "info" | "success" 
   );
 }
 
-export function SampleDataNotice() {
-  return (
-    <Notice tone="warn">
-      <strong>Preview data.</strong> Every company, job and person shown here is fictional sample content for Phase 1. Real listings arrive with the backend in Phase 2.
-    </Notice>
-  );
-}
-
 export function BarChart({ data, unit = "" }: { data: { label: string; value: number }[]; unit?: string }) {
   const max = Math.max(...data.map((d) => d.value), 1);
   return (

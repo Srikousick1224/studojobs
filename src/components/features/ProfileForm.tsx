@@ -1,23 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import { FileUp, X } from "lucide-react";
+import { useState, useTransition } from "react";
+import { FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { Input, Select } from "@/components/ui/Field";
+import { Input, Select, Textarea } from "@/components/ui/Field";
 import { Notice } from "@/components/ui/Misc";
-import { BACKEND_NOTICE } from "@/lib/backend";
-import { skillSuggestions } from "@/lib/data";
+import { saveProfileAction } from "@/lib/student/profile-actions";
+import { profileInput, type MyProfile } from "@/lib/student/profile-schema";
+import type { ActionResult } from "@/lib/stage-e/result";
 
-const MAX_MB = 5;
-const allowed = ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+const YEARS = Array.from({ length: 9 }, (_, i) => String(2024 + i));
 
-export function ProfileForm() {
-  const [skills, setSkills] = useState<string[]>([]);
+export function ProfileForm({ initial }: { initial: MyProfile }) {
+  const [skills, setSkills] = useState<string[]>(initial.skills);
   const [skillInput, setSkillInput] = useState("");
-  const [file, setFile] = useState<File | null>(null);
-  const [fileError, setFileError] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [valid, setValid] = useState(false);
+  const [result, setResult] = useState<ActionResult | null>(null);
+  const [pending, start] = useTransition();
 
   function addSkill(raw: string) {
     const s = raw.trim();
@@ -26,43 +25,46 @@ export function ProfileForm() {
     setSkillInput("");
   }
 
-  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0] ?? null;
-    setFileError("");
-    if (!f) return setFile(null);
-    if (!allowed.includes(f.type)) {
-      setFile(null);
-      return setFileError("Please choose a PDF or Word (.docx) file.");
-    }
-    if (f.size > MAX_MB * 1024 * 1024) {
-      setFile(null);
-      return setFileError(`File is too large. The limit is ${MAX_MB} MB.`);
-    }
-    setFile(f);
-  }
-
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
-    const next: Record<string, string> = {};
-    if (String(f.get("name") ?? "").trim().length < 2) next.name = "Enter your full name.";
-    if (String(f.get("college") ?? "").trim().length < 2) next.college = "Enter your college or university.";
-    if (skills.length === 0) next.skills = "Add at least one skill.";
-    setErrors(next);
-    setValid(Object.keys(next).length === 0 && !fileError);
+    const year = String(f.get("year") ?? "");
+    const parsed = profileInput.safeParse({
+      fullName: String(f.get("name") ?? ""),
+      headline: String(f.get("headline") ?? ""),
+      bio: String(f.get("bio") ?? ""),
+      college: String(f.get("college") ?? ""),
+      degree: String(f.get("degree") ?? ""),
+      location: String(f.get("location") ?? ""),
+      graduationYear: year ? Number(year) : undefined,
+      skills,
+    });
+    if (!parsed.success) {
+      const next: Record<string, string> = {};
+      const keyOf: Record<string, string> = { fullName: "name", graduationYear: "year" };
+      for (const i of parsed.error.issues) { const k = String(i.path[0]); next[keyOf[k] ?? k] ??= i.message; }
+      setErrors(next);
+      setResult(null);
+      return;
+    }
+    setErrors({});
+    start(async () => setResult(await saveProfileAction(parsed.data)));
   }
 
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-6 rounded-2xl bg-white p-6 shadow-soft ring-1 ring-ink-100">
       <div className="grid gap-5 sm:grid-cols-2">
-        <Input id="name" name="name" label="Full name" autoComplete="name" error={errors.name} />
-        <Input id="headline" name="headline" label="Headline" placeholder="e.g. Final-year data science student" />
-        <Input id="college" name="college" label="College / university" error={errors.college} />
-        <Input id="degree" name="degree" label="Degree and branch" placeholder="B.Tech, AI & Data Science" />
-        <Select id="year" name="year" label="Graduation year" defaultValue="2027">
-          {["2026", "2027", "2028", "2029", "2030"].map((y) => <option key={y}>{y}</option>)}
+        <Input id="name" name="name" label="Full name" autoComplete="name" defaultValue={initial.fullName} error={errors.name} />
+        <Input id="headline" name="headline" label="Headline" placeholder="e.g. Final-year data science student" defaultValue={initial.headline} error={errors.headline} />
+        <Input id="college" name="college" label="College / university" defaultValue={initial.college} error={errors.college} />
+        <Input id="degree" name="degree" label="Degree and branch" placeholder="B.Tech, AI & Data Science" defaultValue={initial.degree} error={errors.degree} />
+        <Select id="year" name="year" label="Graduation year" defaultValue={initial.graduationYear ? String(initial.graduationYear) : ""} error={errors.year}>
+          <option value="">Not set</option>
+          {YEARS.map((y) => <option key={y}>{y}</option>)}
         </Select>
+        <Input id="location" name="location" label="Location" placeholder="e.g. Chennai" defaultValue={initial.location} error={errors.location} />
       </div>
+      <Textarea id="bio" name="bio" label="About you" hint="Two or three honest sentences about what you study and want to do." defaultValue={initial.bio} error={errors.bio} />
 
       <div>
         <label htmlFor="skill" className="block text-sm font-semibold text-ink-800">Skills</label>
@@ -73,6 +75,7 @@ export function ProfileForm() {
             onChange={(e) => setSkillInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addSkill(skillInput); } }}
             placeholder="Type a skill and press Enter"
+            maxLength={40}
             className="h-11 flex-1 rounded-xl bg-white px-3.5 text-sm ring-1 ring-ink-200 focus:ring-2 focus:ring-brand-500 focus:outline-none"
           />
           <Button type="button" variant="secondary" onClick={() => addSkill(skillInput)}>Add</Button>
@@ -88,27 +91,30 @@ export function ProfileForm() {
             </li>
           ))}
         </ul>
-        <p className="mt-3 text-xs text-ink-500">
-          Suggestions:{" "}
-          {skillSuggestions.filter((s) => !skills.includes(s)).map((s) => (
-            <button key={s} type="button" onClick={() => addSkill(s)} className="mr-1.5 rounded-md bg-ink-50 px-2 py-1 font-medium text-ink-600 hover:bg-ink-100">+ {s}</button>
-          ))}
-        </p>
+        {initial.suggestions.filter((s) => !skills.some((x) => x.toLowerCase() === s.toLowerCase())).length > 0 && (
+          <p className="mt-3 text-xs text-ink-500">
+            Suggestions:{" "}
+            {initial.suggestions.filter((s) => !skills.some((x) => x.toLowerCase() === s.toLowerCase())).slice(0, 10).map((s) => (
+              <button key={s} type="button" onClick={() => addSkill(s)} className="mr-1.5 mb-1.5 rounded-md bg-ink-50 px-2 py-1 font-medium text-ink-600 hover:bg-ink-100">+ {s}</button>
+            ))}
+          </p>
+        )}
       </div>
 
       <div>
         <p className="text-sm font-semibold text-ink-800">Resume</p>
-        <label htmlFor="resume" className="mt-1.5 flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-ink-300 px-4 py-5 text-sm text-ink-600 transition hover:border-brand-400 hover:bg-brand-50/40 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand-500">
-          <FileUp className="h-6 w-6 text-brand-600" aria-hidden="true" />
-          <span>{file ? <strong className="text-ink-900">{file.name}</strong> : `Choose a PDF or DOCX (max ${MAX_MB} MB)`}</span>
-          <input id="resume" type="file" accept=".pdf,.docx" onChange={onFile} className="sr-only" />
-        </label>
-        {fileError && <p role="alert" className="mt-1.5 text-xs font-medium text-rose-600">{fileError}</p>}
-        <p className="mt-1.5 text-xs text-ink-500">The file is checked here but not uploaded until private cloud storage is connected in Phase 2.</p>
+        {initial.resumes.length > 0 ? (
+          <ul className="mt-2 space-y-1.5 text-sm text-ink-700">
+            {initial.resumes.map((r) => <li key={r.id} className="flex items-center gap-2"><FileText className="h-4 w-4 text-brand-600" aria-hidden="true" />{r.label} <span className="text-ink-500">({r.fileName})</span></li>)}
+          </ul>
+        ) : (
+          <p className="mt-1.5 text-sm text-ink-500">No resume yet.</p>
+        )}
+        <p className="mt-1.5 text-xs text-ink-500">Resume upload is coming next. It needs private cloud storage, which we will test on the real Supabase project first.</p>
       </div>
 
-      <Button type="submit" size="lg">Save profile</Button>
-      {valid && <Notice tone="success">{BACKEND_NOTICE}</Notice>}
+      {result && <Notice tone={result.ok ? "success" : "error"}>{result.message}</Notice>}
+      <Button type="submit" size="lg" disabled={pending}>{pending ? "Saving…" : "Save profile"}</Button>
     </form>
   );
 }

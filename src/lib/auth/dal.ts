@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
 import { fetchProfile } from "@/lib/auth/profile";
@@ -41,6 +42,9 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
 
 /** Use at the top of anything that needs a specific role. Redirects instead of rendering for anyone else. */
 export async function requireRole(role: Role): Promise<Viewer> {
+  // Always decided per request. Without this, a build made without Supabase settings would bake "redirect to /login"
+  // into the prerendered page (isSupabaseConfigured() is false at build time) and serve it to everyone.
+  await connection();
   const viewer = await getViewer();
   if (!viewer) redirect("/login");
   if (viewer.isSuspended || !viewer.onboarded) redirect(viewerHome(viewer));

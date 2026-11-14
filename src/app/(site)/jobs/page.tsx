@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Input, Select } from "@/components/ui/Field";
 import { EmptyState, Notice, PageHeader } from "@/components/ui/Misc";
 import { listCategories, PAGE_SIZE, searchPublicJobs } from "@/lib/stage-e/job-queries";
+import { getSaveState } from "@/lib/saved/queries";
 
 export const metadata: Metadata = { title: "Find jobs and internships" };
 
@@ -29,6 +30,7 @@ async function Results({ searchParams }: { searchParams: Promise<Params> }) {
   };
   const [{ rows, total, error }, categories] = await Promise.all([searchPublicJobs({ ...filters, page }), listCategories()]);
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const save = await getSaveState(rows.map((r) => r.id));
 
   const queryFor = (p: number) => {
     const sp = new URLSearchParams();
@@ -95,7 +97,7 @@ async function Results({ searchParams }: { searchParams: Promise<Params> }) {
         )}
         <div className="grid gap-4 xl:grid-cols-2">
           {rows.map((j) => (
-            <LiveJobCard key={j.id} job={j} />
+            <LiveJobCard key={j.id} job={j} saveMode={save.mode} saved={save.saved.has(j.id)} />
           ))}
         </div>
         {pages > 1 && (

@@ -3,10 +3,14 @@ import { ArrowRight, BadgeCheck, Search, ShieldCheck, Target, Wallet, UserPlus, 
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { LiveJobCard } from "@/components/features/LiveJobCard";
+import { RotatingWord } from "@/components/features/RotatingWord";
+import { SkillMarquee } from "@/components/features/SkillMarquee";
+import { TiltCard } from "@/components/features/TiltCard";
 import { Button } from "@/components/ui/Button";
 import { EmptyState, Notice } from "@/components/ui/Misc";
 import { Briefcase } from "lucide-react";
 import { searchPublicJobs } from "@/lib/stage-e/job-queries";
+import { getSaveState } from "@/lib/saved/queries";
 
 const popular = ["Data analyst", "React", "Design", "Marketing", "Python", "Remote"];
 
@@ -28,6 +32,7 @@ async function FeaturedJobs() {
   await connection();
   const { rows: featured, error: featuredError } = await searchPublicJobs({ page: 1 });
   const shown = featured.slice(0, 4);
+  const save = await getSaveState(shown.map((j) => j.id));
   return (
     <>
       {featuredError && <div className="mt-6"><Notice tone="error">{featuredError}</Notice></div>}
@@ -37,8 +42,10 @@ async function FeaturedJobs() {
         </div>
       )}
       <div className="mt-6 grid gap-4 md:grid-cols-2">
-        {shown.map((j) => (
-          <LiveJobCard key={j.id} job={j} />
+        {shown.map((j, i) => (
+          <div key={j.id} className="stagger" style={{ "--i": i } as React.CSSProperties}>
+            <LiveJobCard job={j} saveMode={save.mode} saved={save.saved.has(j.id)} />
+          </div>
         ))}
       </div>
     </>
@@ -61,7 +68,7 @@ export default function Home() {
               For students and fresh graduates
             </p>
             <h1 className="mt-6 text-balance text-4xl font-extrabold leading-[1.05] sm:text-5xl lg:text-6xl">
-              Your first real <span className="relative whitespace-nowrap text-brand-600">opportunity<svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 200 8" fill="none" aria-hidden="true"><path d="M2 5C50 1 150 1 198 5" stroke="var(--color-mint-500)" strokeWidth="4" strokeLinecap="round" /></svg></span> starts here.
+              Your first real <span className="relative whitespace-nowrap text-brand-600"><RotatingWord words={["opportunity", "internship", "fresher job", "career"]} /><svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 200 8" fill="none" aria-hidden="true"><path d="M2 5C50 1 150 1 198 5" stroke="var(--color-mint-500)" strokeWidth="4" strokeLinecap="round" /></svg></span> starts here.
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink-600">
               Internships, fresher jobs and graduate programmes from employers who actually want to hire beginners — with honest pay and verified companies.
@@ -88,11 +95,12 @@ export default function Home() {
 
           {/* decorative product preview */}
           <div className="relative mx-auto hidden w-full max-w-md lg:block" aria-hidden="true">
-            <div className="absolute -left-6 top-10 w-[88%] rotate-[-5deg] rounded-2xl bg-white p-5 opacity-80 shadow-soft ring-1 ring-ink-100">
+            <div className="animate-float-b absolute -left-6 top-10 w-[88%] rounded-2xl bg-white p-5 opacity-80 shadow-soft ring-1 ring-ink-100">
               <div className="h-3 w-1/2 rounded bg-ink-100" />
               <div className="mt-3 h-3 w-1/3 rounded bg-ink-100" />
             </div>
-            <div className="relative rotate-[2deg] rounded-3xl bg-white p-6 shadow-lift ring-1 ring-ink-100">
+            <TiltCard>
+            <div className="animate-float-a relative rounded-3xl bg-white p-6 shadow-lift ring-1 ring-ink-100">
               <div className="flex items-center gap-4">
                 <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 font-display font-bold text-white">SJ</span>
                 <div>
@@ -115,7 +123,8 @@ export default function Home() {
                 ))}
               </div>
             </div>
-            <div className="absolute -bottom-6 -right-4 flex items-center gap-3 rounded-2xl bg-ink-900 px-4 py-3 text-white shadow-lift">
+            </TiltCard>
+            <div className="animate-float-c absolute -bottom-6 -right-4 flex items-center gap-3 rounded-2xl bg-ink-900 px-4 py-3 text-white shadow-lift">
               <ShieldCheck className="h-6 w-6 text-mint-400" />
               <p className="text-sm font-semibold leading-tight">Verified employer<br /><span className="text-xs font-normal text-ink-300">Reviewed before posting</span></p>
             </div>
@@ -123,11 +132,16 @@ export default function Home() {
         </div>
       </section>
 
+      {/* SKILLS MARQUEE */}
+      <section className="pb-14" aria-label="Skills students are hired for">
+        <SkillMarquee />
+      </section>
+
       {/* FEATURES */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid gap-5 md:grid-cols-3">
           {features.map((f) => (
-            <div key={f.title} className="rounded-2xl bg-white p-7 shadow-soft ring-1 ring-ink-100">
+            <div key={f.title} className="reveal hover-lift rounded-2xl bg-white p-7 shadow-soft ring-1 ring-ink-100">
               <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
                 <f.icon className="h-6 w-6" aria-hidden="true" />
               </span>
@@ -159,7 +173,7 @@ export default function Home() {
         <h2 className="text-3xl font-extrabold">From “where do I start?” to your first offer</h2>
         <ol className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {steps.map((s, i) => (
-            <li key={s.title} className="relative">
+            <li key={s.title} className="reveal relative">
               <span className="flex h-12 w-12 items-center justify-center rounded-full bg-ink-900 font-display text-lg font-bold text-white">{i + 1}</span>
               <h3 className="mt-4 text-lg font-bold">{s.title}</h3>
               <p className="mt-1.5 text-ink-600">{s.text}</p>
@@ -170,7 +184,7 @@ export default function Home() {
 
       {/* EMPLOYER CTA */}
       <section className="mx-auto mt-24 max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="relative overflow-hidden rounded-3xl bg-ink-900 px-6 py-14 text-white sm:px-14">
+        <div className="reveal relative overflow-hidden rounded-3xl bg-ink-900 px-6 py-14 text-white sm:px-14">
           <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-brand-500/40 blur-3xl" aria-hidden="true" />
           <div className="relative max-w-2xl">
             <h2 className="text-3xl font-extrabold sm:text-4xl">Hiring beginners? Meet motivated students.</h2>

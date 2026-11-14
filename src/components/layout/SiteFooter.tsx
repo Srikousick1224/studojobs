@@ -4,13 +4,14 @@ import { Logo } from "@/components/ui/Logo";
 const cols = [
   { title: "Students", links: [["Find jobs", "/jobs"], ["Find internships", "/internships"], ["Career resources", "/resources"], ["Student dashboard", "/student"]] },
   { title: "Employers", links: [["Post an opportunity", "/employer/jobs/new"], ["Employer dashboard", "/employer"], ["Browse companies", "/companies"]] },
-  { title: "Trust & safety", links: [["Report a listing", "/report"]] },
+  { title: "Trust & safety", links: [["Stay safe from scams", "/safety"], ["Report a listing", "/report"], ["Help centre", "/help"], ["Appearance settings", "/settings"]] },
+  { title: "Company", links: [["About", "/about"], ["Contact", "/contact"], ["Privacy", "/privacy"], ["Terms", "/terms"]] },
 ];
 
 export function SiteFooter() {
   return (
     <footer className="mt-24 bg-ink-950 text-ink-300">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-4 lg:px-8">
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-5 lg:px-8">
         <div>
           <Logo light />
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-ink-400">
@@ -31,7 +32,7 @@ export function SiteFooter() {
         ))}
       </div>
       <div className="border-t border-ink-800 px-4 py-5 text-center text-xs text-ink-500">
-        © StudoJob. Phase 1 preview — all listings shown are fictional sample data.
+        © StudoJob. In active development: features are added step by step.
       </div>
     </footer>
   );

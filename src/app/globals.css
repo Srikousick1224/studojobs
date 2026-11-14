@@ -8,7 +8,7 @@
   --color-ink-100: #eeecf2;
   --color-ink-200: #dcd9e4;
   --color-ink-300: #bdb8cb;
-  --color-ink-400: #8f89a3;
+  --color-ink-400: #726b89;
   --color-ink-500: #6b6580;
   --color-ink-600: #524d66;
   --color-ink-700: #3b3750;
@@ -31,7 +31,7 @@
   --color-mint-400: #3ee0b3;
   --color-mint-500: #19c99a;
   --color-mint-600: #0fa57d;
-  --color-mint-700: #0b7f60;
+  --color-mint-700: #09725a;
 
   --color-sand: #faf8f4;
 
@@ -70,6 +70,86 @@ h1, h2, h3, h4 {
   animation: rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* ---- Motion extras (all disabled by the reduced-motion block below) ---- */
+@keyframes float-a {
+  0%, 100% { transform: translateY(0) rotate(2deg); }
+  50% { transform: translateY(-10px) rotate(2deg); }
+}
+@keyframes float-b {
+  0%, 100% { transform: translateY(0) rotate(-5deg); }
+  50% { transform: translateY(8px) rotate(-5deg); }
+}
+@keyframes float-c {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(24px, 18px) scale(1.08); }
+}
+@keyframes draw {
+  from { stroke-dashoffset: 220; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
+}
+@keyframes pop {
+  0% { transform: scale(0.85); opacity: 0; }
+  70% { transform: scale(1.04); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes grow-x {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.animate-float-a { animation: float-a 7s ease-in-out infinite; }
+.animate-float-b { animation: float-b 8s ease-in-out infinite; }
+.animate-float-c { animation: float-c 6s ease-in-out infinite; }
+.animate-drift { animation: drift 14s ease-in-out infinite; }
+.animate-pop { animation: pop 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.draw-line { stroke-dasharray: 220; animation: draw 1s 0.5s ease-out both; }
+
+/* Staggered entrance: set style={{ "--i": n }} on each item */
+.stagger { animation: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: calc(var(--i, 0) * 80ms); }
+
+/* Animated gradient text for highlights */
+.text-shimmer {
+  background: linear-gradient(90deg, var(--color-brand-600), var(--color-mint-500), var(--color-brand-600));
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 6s linear infinite;
+}
+
+/* Lift on hover for cards */
+.hover-lift { transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s; }
+.hover-lift:hover { transform: translateY(-4px); box-shadow: var(--shadow-lift); }
+
+/* Scroll reveal: pure CSS, no JavaScript. Browsers without
+   scroll-driven animations simply show the content normally. */
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation: rise linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 35%;
+  }
+}
+
+.scroll-progress {
+  transform-origin: left;
+  animation: grow-x linear both;
+}
+@supports (animation-timeline: scroll()) {
+  .scroll-progress { animation-timeline: scroll(root); }
+}
+@supports not (animation-timeline: scroll()) {
+  .scroll-progress { display: none; }
+}
+
 .bg-grid {
   background-image:
     linear-gradient(to right, rgb(22 20 42 / 0.04) 1px, transparent 1px),
@@ -77,10 +157,245 @@ h1, h2, h3, h4 {
   background-size: 48px 48px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-  }
+
+/* ---- Added: marquee, rotating word, flip card ---- */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
 }
+.marquee-track { display: flex; width: max-content; animation: marquee 32s linear infinite; }
+.marquee:hover .marquee-track { animation-play-state: paused; }
+
+@keyframes word-in {
+  from { opacity: 0; transform: translateY(0.4em); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-word { animation: word-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes check-pop {
+  0% { transform: scale(0.6); }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+.animate-check { animation: check-pop 0.25s ease-out both; }
+
+
+/* ---- Motion: follows the system unless the user picked Reduce or Full in Settings ---- */
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="full"]) { scroll-behavior: auto; }
+  :root:not([data-motion="full"]) *, :root:not([data-motion="full"]) *::before, :root:not([data-motion="full"]) *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  :root:not([data-motion="full"]) .reveal { animation: none !important; }
+  :root:not([data-motion="full"]) .marquee-track { animation: none !important; }
+  :root:not([data-motion="full"]) .text-shimmer { animation: none !important; color: var(--color-brand-600); background: none; }
+}
+@media all {
+  :root[data-motion="reduce"] { scroll-behavior: auto; }
+  :root[data-motion="reduce"] *, :root[data-motion="reduce"] *::before, :root[data-motion="reduce"] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  :root[data-motion="reduce"] .reveal { animation: none !important; }
+  :root[data-motion="reduce"] .marquee-track { animation: none !important; }
+  :root[data-motion="reduce"] .text-shimmer { animation: none !important; color: var(--color-brand-600); background: none; }
+}
+
+/* =====================================================================
+   Appearance settings (written on <html> by src/lib/appearance)
+   ===================================================================== */
+
+/* --- Interface size --- */
+html[data-scale="90"] { font-size: 90%; }
+html[data-scale="112"] { font-size: 112%; }
+html[data-scale="125"] { font-size: 125%; }
+
+/* --- Corners --- */
+:root[data-radius="sharp"] { --radius-md: 0.125rem; --radius-lg: 0.1875rem; --radius-xl: 0.25rem; --radius-2xl: 0.3125rem; --radius-3xl: 0.375rem; }
+:root[data-radius="soft"] { --radius-md: 0.25rem; --radius-lg: 0.375rem; --radius-xl: 0.5rem; --radius-2xl: 0.625rem; --radius-3xl: 0.875rem; }
+
+/* --- Font --- */
+:root[data-font="system"] {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+:root[data-font="serif"] {
+  --font-sans: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+}
+
+/* --- Accent colours: one hue drives the whole brand scale --- */
+:root[data-accent="ocean"] { --h: 255; }
+:root[data-accent="rose"] { --h: 5; }
+:root[data-accent="forest"] { --h: 155; }
+:root[data-accent="amber"] { --h: 68; }
+:root[data-accent] {
+  --color-brand-50: oklch(0.97 0.02 var(--h));
+  --color-brand-100: oklch(0.94 0.04 var(--h));
+  --color-brand-200: oklch(0.88 0.08 var(--h));
+  --color-brand-300: oklch(0.79 0.14 var(--h));
+  --color-brand-400: oklch(0.69 0.2 var(--h));
+  --color-brand-500: oklch(0.6 0.22 var(--h));
+  --color-brand-600: oklch(0.53 0.22 var(--h));
+  --color-brand-700: oklch(0.46 0.19 var(--h));
+  --color-brand-800: oklch(0.39 0.15 var(--h));
+  --color-brand-900: oklch(0.32 0.11 var(--h));
+}
+:root[data-accent="amber"] {
+  --color-brand-500: oklch(0.7 0.17 var(--h));
+  --color-brand-600: oklch(0.6 0.16 var(--h));
+  --color-brand-700: oklch(0.5 0.14 var(--h));
+}
+
+/* --- Dark theme: remaps the colour tokens, so every component follows without edits --- */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-sand: #0e0c1d;
+  --color-ink-50: #1b1833;
+  --color-ink-100: #23203d;
+  --color-ink-200: #2f2b4b;
+  --color-ink-300: #4a4566;
+  --color-ink-400: #8a84a3;
+  --color-ink-500: #a39ebb;
+  --color-ink-600: #bbb7cf;
+  --color-ink-700: #d3d0e0;
+  --color-ink-800: #e6e4ee;
+  --color-ink-900: #f4f3f8;
+  --color-ink-950: #fbfafd;
+  --color-brand-50: oklch(0.27 0.06 var(--h, 285));
+  --color-brand-100: oklch(0.31 0.08 var(--h, 285));
+  --color-brand-200: oklch(0.38 0.12 var(--h, 285));
+  --color-brand-300: oklch(0.5 0.16 var(--h, 285));
+  --color-brand-600: oklch(0.68 0.19 var(--h, 285));
+  --color-brand-700: oklch(0.78 0.13 var(--h, 285));
+  --color-brand-800: oklch(0.84 0.09 var(--h, 285));
+  --color-brand-900: oklch(0.9 0.05 var(--h, 285));
+  --color-mint-100: #0f3b30;
+  --color-mint-700: #5eead4;
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.25);
+  --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.35), 0 12px 32px rgb(0 0 0 / 0.4);
+}
+:root[data-theme="dark"][data-accent="amber"] { --color-brand-500: oklch(0.72 0.16 68); }
+:root[data-theme="dark"] .bg-white { background-color: #181530; }
+:root[data-theme="dark"] .bg-white\/90 { background-color: rgb(24 21 48 / 0.9); }
+:root[data-theme="dark"] .bg-white\/60 { background-color: rgb(24 21 48 / 0.6); }
+:root[data-theme="dark"] .focus\:bg-white:focus { background-color: #181530; }
+/* Surfaces that are dark in both themes keep the original ink scale, so their text stays light. */
+
+:root[data-theme="dark"] :is(.bg-rose-50, .bg-rose-100) { background-color: rgb(244 63 94 / 0.16); }
+:root[data-theme="dark"] :is(.bg-amber-50, .bg-amber-100) { background-color: rgb(245 158 11 / 0.16); }
+:root[data-theme="dark"] :is(.bg-sky-50, .bg-sky-100) { background-color: rgb(14 165 233 / 0.16); }
+:root[data-theme="dark"] :is(.text-rose-600, .text-rose-700, .text-rose-800) { color: #fda4af; }
+:root[data-theme="dark"] :is(.text-amber-700, .text-amber-800, .text-amber-900) { color: #fcd34d; }
+:root[data-theme="dark"] :is(.text-sky-700, .text-sky-900) { color: #7dd3fc; }
+:root[data-theme="dark"] :is(.ring-rose-200, .ring-amber-200, .ring-sky-200) { --tw-ring-color: rgb(255 255 255 / 0.12); }
+
+/* --- High contrast --- */
+:root[data-contrast="high"]:not([data-theme="dark"]) {
+  --color-ink-100: #bdb8cb; --color-ink-200: #8f89a3;
+  --color-ink-400: #524d66; --color-ink-500: #3b3750; --color-ink-600: #26233a;
+}
+:root[data-contrast="high"][data-theme="dark"] {
+  --color-ink-100: #4a4566; --color-ink-200: #6f6a8c;
+  --color-ink-400: #c5c1d8; --color-ink-500: #dcd9e8; --color-ink-600: #ebe9f2;
+}
+
+/* --- Command palette --- */
+dialog.palette::backdrop { background: rgb(14 12 29 / 0.55); backdrop-filter: blur(4px); }
+dialog.palette[open] { animation: rise 0.25s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Surfaces that are dark in BOTH themes (footer, call-to-action bands) keep a fixed light-on-dark ink scale. */
+:is(.bg-ink-900, .bg-ink-950) {
+  --color-ink-50: #f7f6f9; --color-ink-100: #eeecf2; --color-ink-200: #dcd9e4; --color-ink-300: #bdb8cb;
+  --color-ink-400: #a39dba; --color-ink-500: #9d98b3; --color-ink-600: #524d66; --color-ink-700: #3b3750;
+  --color-ink-800: #26233a; --color-ink-900: #16142a; --color-ink-950: #0e0c1d;
+}
+
+/* =====================================================================
+   Stage E5: button styles, backgrounds and "alive" effects (Settings -> Appearance)
+   All of it is switched off by data-fx="none" and by the reduced-motion rules above.
+   ===================================================================== */
+:root[data-accent="custom"] { --h: 262; }
+
+/* --- Button styles (primary buttons carry .btn-primary) --- */
+.btn-primary { position: relative; overflow: hidden; isolation: isolate; }
+:root[data-button="gradient"] .btn-primary {
+  background-image: linear-gradient(120deg, var(--color-brand-400), var(--color-brand-600) 55%, var(--color-brand-800));
+  background-size: 160% 100%;
+  transition: background-position 0.5s ease, transform 0.2s, box-shadow 0.2s;
+}
+:root[data-button="gradient"] .btn-primary:hover { background-position: 100% 0; }
+:root[data-button="outline"] .btn-primary {
+  background: transparent; color: var(--color-brand-700); box-shadow: inset 0 0 0 2px var(--color-brand-500);
+}
+:root[data-button="outline"] .btn-primary:hover { background: var(--color-brand-50); }
+:root[data-button="glow"] .btn-primary { box-shadow: 0 0 0 1px var(--color-brand-400), 0 6px 24px color-mix(in oklab, var(--color-brand-500) 55%, transparent); }
+:root[data-button="glow"] .btn-primary:hover { box-shadow: 0 0 0 1px var(--color-brand-300), 0 8px 34px color-mix(in oklab, var(--color-brand-500) 80%, transparent); }
+
+/* Shine sweep across primary buttons */
+@keyframes shine { from { transform: translateX(-130%) skewX(-20deg); } to { transform: translateX(260%) skewX(-20deg); } }
+:root[data-fx="subtle"] .btn-primary::after, :root[data-fx="lively"] .btn-primary::after {
+  content: ""; position: absolute; inset: 0; width: 40%; z-index: -1; pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.35), transparent);
+  transform: translateX(-130%) skewX(-20deg);
+}
+:root[data-fx="subtle"] .btn-primary:hover::after, :root[data-fx="lively"] .btn-primary:hover::after { animation: shine 0.8s ease; }
+:root[data-fx="lively"] .btn-primary { animation: btn-breathe 3.2s ease-in-out infinite; }
+@keyframes btn-breathe { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.08); } }
+:root[data-fx="lively"] .btn-primary:not(:disabled):hover { transform: translateY(-1px); }
+
+/* --- Animated backgrounds (behind everything, never block clicks) --- */
+body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+:root[data-bg="aurora"] body::before {
+  background:
+    radial-gradient(40vmax 40vmax at 15% 10%, color-mix(in oklab, var(--color-brand-400) 26%, transparent), transparent 70%),
+    radial-gradient(36vmax 36vmax at 85% 20%, color-mix(in oklab, var(--color-mint-400) 22%, transparent), transparent 70%),
+    radial-gradient(44vmax 44vmax at 60% 95%, color-mix(in oklab, var(--color-brand-600) 20%, transparent), transparent 70%);
+  background-size: 140% 140%;
+}
+:root[data-bg="aurora"][data-fx="subtle"] body::before, :root[data-bg="aurora"][data-fx="lively"] body::before { animation: aurora 18s ease-in-out infinite alternate; }
+@keyframes aurora { from { background-position: 0% 0%; filter: hue-rotate(0deg); } to { background-position: 100% 60%; filter: hue-rotate(25deg); } }
+:root[data-bg="grid"] body::before {
+  background-image: linear-gradient(color-mix(in oklab, var(--color-brand-500) 12%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in oklab, var(--color-brand-500) 12%, transparent) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse at 50% 0%, #000 20%, transparent 75%);
+}
+:root[data-bg="grid"][data-fx="lively"] body::before { animation: grid-pan 30s linear infinite; }
+@keyframes grid-pan { to { background-position: 44px 44px, 44px 44px; } }
+:root[data-bg="dots"] body::before {
+  background-image: radial-gradient(color-mix(in oklab, var(--color-brand-500) 28%, transparent) 1.2px, transparent 1.4px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse at 50% 0%, #000 15%, transparent 70%);
+}
+
+/* --- Cursor spotlight + scroll progress (driven by <FxLayer />) --- */
+.fx-spot { position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: 0; transition: opacity 0.4s; }
+:root[data-fx="lively"] .fx-spot {
+  opacity: 1;
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 30%), color-mix(in oklab, var(--color-brand-400) 14%, transparent), transparent 70%);
+}
+.fx-progress { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 60; pointer-events: none; transform-origin: 0 50%; transform: scaleX(0); opacity: 0;
+  background: linear-gradient(90deg, var(--color-brand-400), var(--color-mint-500)); }
+@supports (animation-timeline: scroll()) {
+  :root[data-fx="subtle"] .fx-progress, :root[data-fx="lively"] .fx-progress { opacity: 1; animation: grow-x linear both; animation-timeline: scroll(root); }
+}
+
+/* --- Cards and lists come alive --- */
+:root[data-fx="lively"] article { transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s; }
+:root[data-fx="lively"] article:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); }
+:root[data-fx="lively"] article { animation: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+:root[data-fx="lively"] article:nth-child(2) { animation-delay: 0.05s; }
+:root[data-fx="lively"] article:nth-child(3) { animation-delay: 0.1s; }
+:root[data-fx="lively"] article:nth-child(4) { animation-delay: 0.15s; }
+:root[data-fx="lively"] article:nth-child(5) { animation-delay: 0.2s; }
+:root[data-fx="lively"] article:nth-child(n+6) { animation-delay: 0.25s; }
+:root[data-fx="subtle"] article:hover { box-shadow: var(--shadow-lift); }
+:root[data-fx="lively"] header a[aria-current="page"] { animation: pop 0.35s both; }
+:root[data-fx="lively"] .logo-mark, :root[data-fx="lively"] header a:hover .logo-mark { transition: transform 0.3s; }

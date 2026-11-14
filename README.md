@@ -108,3 +108,20 @@ Employers can create a company profile, save drafts, publish, edit, pause and cl
 - **Commands:** `npm run lint`, `npm run build`, `npm run test:db`, `npm run test:auth`, `npm run test:stage-e`, `npm run test:stage-e2`, `npm run test:stage-e2-db` (simulated; never touches Supabase).
 - **Not yet verified against your real Supabase project.** Follow the manual guide in `PHASE2_PROGRESS.md` section 18 and the Stage E2 report.
 - **Known gaps:** live-listing edits are not re-reviewed; re-applying after withdrawal is blocked; job skills and resume upload UI are not built. See `PHASE2_PROGRESS.md` section 18.
+
+## Polish pass (2026-11-11): animations and career tools
+- Home: rotating hero word, floating hero cards, skills marquee, scroll-reveal sections, card lift on hover.
+- Site-wide: scroll progress bar and back-to-top button (public pages).
+- `/resources`: working **Resume checklist** (progress saved in the visitor's own browser) and **Interview practice** (topic filter, tips, 2-minute timer).
+- All motion respects `prefers-reduced-motion`. No database, auth or migration changes.
+- New test: `npm run test:tools`.
+
+## Appearance and tools pass (2026-11-12)
+- **Settings page `/settings`** (also linked in footer, mobile menu and Ctrl+K): theme (light, dark, match device), 5 accent colours, interface size (90 to 125%), corner style, font, animations (match device / reduce / full) and high contrast, with a live preview and reset. Saved in the browser only (`localStorage` key `studojob.appearance.v1`); nothing goes to Supabase.
+- **Dark mode** works by remapping colour tokens in `src/app/globals.css`, so every component follows. A tiny inline script in `src/app/layout.tsx` applies the saved theme before first paint (no flash).
+- **Ctrl/Cmd + K command palette** on public pages: jump to any page or change appearance. Header also has a theme toggle.
+- **Pay converter** on `/resources`: hourly / monthly / yearly / LPA.
+- **Hero**: 3D tilt on the preview card (pointer only), staggered job cards.
+- Code: `src/lib/appearance/*`, `src/lib/tools/*`, `src/components/features/{AppearanceSettings,CommandPalette,ThemeToggle,TiltCard,PayConverter}.tsx`.
+- Tests: `npm run test:tools` (9 checks, including the pre-paint script).
+- Not yet themed or tested in dark mode: the logged-in dashboards (student, employer, admin), because they need a real sign-in.

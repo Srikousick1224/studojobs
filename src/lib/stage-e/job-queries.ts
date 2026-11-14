@@ -297,3 +297,70 @@ export async function listMyVerificationRequests(): Promise<MyVerificationReques
     data,
   );
 }
+
+/** Published jobs for a list of ids (used by Saved opportunities). Order of `ids` is kept. */
+export async function listPublicJobsByIds(ids: string[]): Promise<JobListItem[]> {
+  const clean = ids.filter((i) => UUID.safeParse(i).success).slice(0, 100);
+  if (clean.length === 0 || !isSupabaseConfigured()) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("jobs").select(PUBLIC_SELECT).in("id", clean).eq("status", "published");
+  if (error) return [];
+  const byId = new Map(parseRows(publicJobRow, data).flatMap((r) => { const i = toListItem(r); return i ? [[i.id, i] as const] : []; }));
+  return clean.flatMap((id) => (byId.has(id) ? [byId.get(id)!] : []));
+}
+
+export interface PublicCompany {
+  id: string;
+  name: string;
+  slug: string;
+  industry: string | null;
+  location: string | null;
+  about: string | null;
+  website: string | null;
+  sizeRange: string | null;
+  verified: boolean;
+  openRoles: number;
+}
+
+const companyListRow = z.object({
+  id: z.uuid(),
+  name: z.string(),
+  slug: z.string(),
+  industry: z.string().nullable(),
+  location: z.string().nullable(),
+  about: z.string().nullable(),
+  website: z.string().nullable(),
+  size_range: z.string().nullable(),
+  verification_status: z.string(),
+});
+const COMPANY_SELECT = "id, name, slug, industry, location, about, website, size_range, verification_status";
+const toCompany = (r: z.output<typeof companyListRow>, openRoles = 0): PublicCompany => ({
+  id: r.id, name: r.name, slug: r.slug, industry: r.industry, location: r.location, about: r.about, website: r.website,
+  sizeRange: r.size_range, verified: r.verification_status === "approved", openRoles,
+});
+
+/** Companies anyone may see (verified, or with a public listing). `openRoles` counts published jobs only. */
+export async function listPublicCompanies(): Promise<Result<PublicCompany>> {
+  if (!isSupabaseConfigured()) return { rows: [], error: NOT_CONFIGURED_MESSAGE };
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("companies").select(COMPANY_SELECT).order("name").limit(200);
+  if (error) return { rows: [], error: "We could not load companies right now. Please refresh the page." };
+  // Open roles are counted from published jobs only (a separate, simple query; RLS already hides everything else).
+  const { data: jobRows } = await supabase.from("jobs").select("company_id").eq("status", "published").limit(2000);
+  const open = new Map<string, number>();
+  for (const j of jobRows ?? []) open.set(String(j.company_id), (open.get(String(j.company_id)) ?? 0) + 1);
+  return { rows: parseRows(companyListRow, data).map((c) => toCompany(c, open.get(c.id) ?? 0)), error: null };
+}
+
+export async function getPublicCompany(slug: string): Promise<{ company: PublicCompany | null; jobs: JobListItem[]; error: string | null }> {
+  if (!/^[a-z0-9-]{1,80}$/.test(slug)) return { company: null, jobs: [], error: null };
+  if (!isSupabaseConfigured()) return { company: null, jobs: [], error: NOT_CONFIGURED_MESSAGE };
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("companies").select(COMPANY_SELECT).eq("slug", slug).maybeSingle();
+  if (error) return { company: null, jobs: [], error: "We could not load this company right now." };
+  const parsed = companyListRow.safeParse(data);
+  if (!parsed.success) return { company: null, jobs: [], error: null };
+  const { data: jobRows } = await supabase.from("jobs").select(PUBLIC_SELECT).eq("company_id", parsed.data.id).eq("status", "published").order("published_at", { ascending: false }).limit(50);
+  const jobs = parseRows(publicJobRow, jobRows).flatMap((r) => { const i = toListItem(r); return i ? [i] : []; });
+  return { company: toCompany(parsed.data, jobs.length), jobs, error: null };
+}

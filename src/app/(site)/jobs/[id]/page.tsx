@@ -14,6 +14,7 @@ import { Card } from "@/components/ui/Card";
 import { getViewer } from "@/lib/auth/dal";
 import { applyToJobAction } from "@/lib/stage-e/job-actions";
 import { daysSince, jobTypeLabel, workModeLabel } from "@/lib/stage-e/format";
+import { getSaveState } from "@/lib/saved/queries";
 import { getMyApplicationFor, getPublicJob, listMyResumes, searchPublicJobs } from "@/lib/stage-e/job-queries";
 import { hueFromName } from "@/lib/stage-e/job-view";
 import { isApplicationStatus, } from "@/lib/stage-e/schemas";
@@ -84,9 +85,24 @@ async function JobBody({ params }: { params: Promise<{ id: string }> }) {
     job.categoryId ? searchPublicJobs({ category: String(job.categoryId) }) : Promise.resolve({ rows: [], total: 0, error: null }),
   ]);
   const relatedJobs = similar.rows.filter((j) => j.id !== job.id).slice(0, 3);
+  const save = await getSaveState([job.id, ...relatedJobs.map((j) => j.id)]);
+
+  const ld = {
+    "@context": "https://schema.org",
+    "@type": "JobPosting",
+    title: job.title,
+    description: [job.summary, ...job.responsibilities].filter(Boolean).join("\n"),
+    datePosted: job.publishedAt ?? undefined,
+    validThrough: job.deadline ?? undefined,
+    employmentType: job.type === "internship" ? "INTERN" : job.employment === "part_time" ? "PART_TIME" : job.employment === "contract" ? "CONTRACTOR" : "FULL_TIME",
+    hiringOrganization: { "@type": "Organization", name: job.companyName },
+    jobLocationType: job.workMode === "remote" ? "TELECOMMUTE" : undefined,
+    jobLocation: job.workMode === "remote" ? undefined : { "@type": "Place", address: job.location },
+  };
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, "\\u003c") }} />
       <nav aria-label="Breadcrumb" className="mb-6 text-sm text-ink-500">
         <Link href="/jobs" className="hover:text-brand-600">Jobs</Link> / <span className="text-ink-800">{job.title}</span>
       </nav>
@@ -147,7 +163,7 @@ async function JobBody({ params }: { params: Promise<{ id: string }> }) {
             </div>
             <ApplyArea jobId={job.id} viewer={viewer} existing={existing} resumes={resumes} />
             <div className="flex items-center justify-between border-t border-ink-100 pt-4">
-              <SaveButton jobId={job.id} withLabel />
+              <SaveButton jobId={job.id} withLabel mode={save.mode} initialSaved={save.saved.has(job.id)} />
               <Link href={`/report?job=${job.id}`} className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-500 hover:text-rose-600">
                 <Flag className="h-4 w-4" aria-hidden="true" /> Report listing
               </Link>
@@ -160,7 +176,7 @@ async function JobBody({ params }: { params: Promise<{ id: string }> }) {
         <section className="mt-16">
           <h2 className="text-2xl font-extrabold">Similar opportunities</h2>
           <div className="mt-5 grid gap-4 md:grid-cols-3">
-            {relatedJobs.map((j) => <LiveJobCard key={j.id} job={j} />)}
+            {relatedJobs.map((j) => <LiveJobCard key={j.id} job={j} saveMode={save.mode} saved={save.saved.has(j.id)} />)}
           </div>
         </section>
       )}

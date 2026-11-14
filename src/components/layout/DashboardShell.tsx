@@ -6,7 +6,6 @@ import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/Logo";
-import { SampleDataNotice } from "@/components/ui/Misc";
 import { logoutAction } from "@/lib/auth/actions";
 import { LogOut } from "lucide-react";
 
@@ -89,7 +88,6 @@ export function DashboardShell({ role, items, userName, children }: { role: stri
           </nav>
         </div>
         <main className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:px-10">
-          <SampleDataNotice />
           {children}
         </main>
       </div>

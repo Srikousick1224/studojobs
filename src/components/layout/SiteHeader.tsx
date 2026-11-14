@@ -5,12 +5,15 @@ import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Logo } from "@/components/ui/Logo";
+import { PaletteButton } from "@/components/features/CommandPalette";
+import { ThemeToggle } from "@/components/features/ThemeToggle";
 import { cn } from "@/lib/utils";
 
 const links = [
   { href: "/jobs", label: "Jobs" },
   { href: "/internships", label: "Internships" },
   { href: "/companies", label: "Companies" },
+  { href: "/community", label: "Community" },
   { href: "/resources", label: "Career resources" },
 ];
 
@@ -37,7 +40,11 @@ export function SiteHeader({ desktopAuth, mobileAuth }: { desktopAuth: ReactNode
             </Link>
           ))}
         </nav>
-        <div className="hidden items-center gap-2 md:flex">{desktopAuth}</div>
+        <div className="hidden items-center gap-2 md:flex">
+          <PaletteButton />
+          <ThemeToggle />
+          {desktopAuth}
+        </div>
         <button
           type="button"
           className="flex h-10 w-10 items-center justify-center rounded-lg text-ink-700 hover:bg-ink-100 md:hidden"
@@ -58,6 +65,10 @@ export function SiteHeader({ desktopAuth, mobileAuth }: { desktopAuth: ReactNode
               </Link>
             ))}
           </nav>
+          <div className="mt-3 flex items-center gap-2 border-t border-ink-100 pt-3">
+            <ThemeToggle />
+            <Link href="/settings" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2 text-sm font-semibold text-ink-600 hover:bg-ink-100">Settings</Link>
+          </div>
           <div className="mt-3">{mobileAuth}</div>
         </div>
       )}

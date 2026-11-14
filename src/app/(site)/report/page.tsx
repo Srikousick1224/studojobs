@@ -1,13 +1,40 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { ReportForm } from "@/components/features/ReportForm";
-import { PageHeader } from "@/components/ui/Misc";
+import { Notice, PageHeader } from "@/components/ui/Misc";
+import { getViewer } from "@/lib/auth/dal";
+import { getPublicJob } from "@/lib/stage-e/job-queries";
 
 export const metadata: Metadata = { title: "Report a listing" };
 
 async function Form({ searchParams }: { searchParams: Promise<{ job?: string }> }) {
-  const { job } = await searchParams;
-  return <ReportForm defaultJobId={job} />;
+  await connection();
+  const { job: jobId } = await searchParams;
+  const { job } = jobId ? await getPublicJob(jobId) : { job: null };
+  if (!job) {
+    return (
+      <Notice>
+        Open the listing you want to report and choose <strong>Report listing</strong>. You can start from <Link href="/jobs" className="font-semibold text-brand-700 underline">the job list</Link>.
+      </Notice>
+    );
+  }
+  const viewer = await getViewer();
+  return (
+    <div className="space-y-5">
+      <p className="rounded-xl bg-ink-50 px-4 py-3 text-sm text-ink-700 ring-1 ring-ink-100">
+        You are reporting: <Link href={`/jobs/${job.id}`} className="font-bold text-brand-700 hover:underline">{job.title}</Link> at {job.companyName}
+      </p>
+      {viewer ? (
+        <ReportForm jobId={job.id} />
+      ) : (
+        <Notice>
+          Please <Link href={`/login?next=${encodeURIComponent(`/report?job=${job.id}`)}`} className="font-semibold text-brand-700 underline">sign in</Link> to send a report. This helps us stop spam reports.
+        </Notice>
+      )}
+    </div>
+  );
 }
 
 export default function ReportPage({ searchParams }: { searchParams: Promise<{ job?: string }> }) {
