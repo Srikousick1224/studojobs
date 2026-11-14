@@ -22,7 +22,7 @@ export function SiteHeader({ desktopAuth, mobileAuth }: { desktopAuth: ReactNode
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-ink-100 bg-sand/85 backdrop-blur-md">
+    <header className="header-scroll sticky top-0 z-40 border-b border-ink-100 bg-sand/85 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <Logo />
         <nav aria-label="Main" className="hidden items-center gap-1 md:flex">

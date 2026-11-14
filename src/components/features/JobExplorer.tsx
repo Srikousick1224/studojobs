@@ -144,7 +144,7 @@ export function JobExplorer({ jobs, initialQuery = "", lockType }: Props) {
             action={<Button variant="secondary" onClick={reset}>Clear filters</Button>}
           />
         ) : (
-          <div className="grid gap-4 xl:grid-cols-2">
+          <div className="stagger-grid grid gap-4 xl:grid-cols-2">
             {results.map((j) => (
               <JobCard key={j.id} job={j} />
             ))}
