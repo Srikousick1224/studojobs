@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getViewer } from "@/lib/auth/dal";
 import { isSupabaseConfigured, NOT_CONFIGURED_MESSAGE } from "@/lib/env";
 import { isApplicationStatus } from "./schemas";
-import type { ApplicationStatus } from "./status";
+import { APPLICATION_STATUSES, type ApplicationStatus } from "./status";
 
 /**
  * Stage E read queries. Every query runs AS THE LOGGED-IN USER, so Row Level Security
@@ -173,15 +173,17 @@ export interface EmployerStats {
   totalApplicants: number;
   shortlisted: number;
   weekly: { label: string; value: number }[];
+  /** Applications grouped by status (all of this employer's roles). Same order as APPLICATION_STATUSES. */
+  pipeline: { status: string; count: number }[];
   error: string | null;
 }
 
 /** Real counts for the employer's own company. Empty company = zeros, never invented numbers. */
 export async function getEmployerStats(): Promise<EmployerStats> {
   if (!isSupabaseConfigured()) {
-    return { openRoles: 0, totalApplicants: 0, shortlisted: 0, weekly: [], error: NOT_CONFIGURED_MESSAGE };
+    return { openRoles: 0, totalApplicants: 0, shortlisted: 0, weekly: [], pipeline: [], error: NOT_CONFIGURED_MESSAGE };
   }
-  const empty: EmployerStats = { openRoles: 0, totalApplicants: 0, shortlisted: 0, weekly: [], error: null };
+  const empty: EmployerStats = { openRoles: 0, totalApplicants: 0, shortlisted: 0, weekly: [], pipeline: [], error: null };
   const viewer = await getViewer();
   if (!viewer) return { ...empty, error: GENERIC_ERROR };
   const supabase = await createClient();
@@ -194,21 +196,24 @@ export async function getEmployerStats(): Promise<EmployerStats> {
   const since = new Date(Date.now() - 6 * 86_400_000);
   since.setUTCHours(0, 0, 0, 0);
 
-  const [openRes, totalRes, shortRes, weekRes] = await Promise.all([
+  const [openRes, totalRes, shortRes, weekRes, statusRes] = await Promise.all([
     companyIds.length
       ? supabase.from("jobs").select("id", { count: "exact", head: true }).eq("status", "published").in("company_id", companyIds)
       : Promise.resolve({ count: 0, error: null }),
     supabase.from("applications").select("id", { count: "exact", head: true }),
     supabase.from("applications").select("id", { count: "exact", head: true }).eq("status", "shortlisted"),
     supabase.from("applications").select("applied_at").gte("applied_at", since.toISOString()),
+    supabase.from("applications").select("status").limit(5000),
   ]);
-  if (openRes.error || totalRes.error || shortRes.error || weekRes.error) return { ...empty, error: GENERIC_ERROR };
+  if (openRes.error || totalRes.error || shortRes.error || weekRes.error || statusRes.error) return { ...empty, error: GENERIC_ERROR };
 
   const counts = new Map<string, number>();
   for (const r of parseRows(z.object({ applied_at: z.string() }), weekRes.data)) {
     const key = r.applied_at.slice(0, 10);
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
+  const statusCounts = new Map<string, number>();
+  for (const r of parseRows(z.object({ status: z.string() }), statusRes.data)) statusCounts.set(r.status, (statusCounts.get(r.status) ?? 0) + 1);
   const weekly = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(since.getTime() + i * 86_400_000);
     return {
@@ -222,6 +227,7 @@ export async function getEmployerStats(): Promise<EmployerStats> {
     totalApplicants: totalRes.count ?? 0,
     shortlisted: shortRes.count ?? 0,
     weekly,
+    pipeline: APPLICATION_STATUSES.map((status) => ({ status, count: statusCounts.get(status) ?? 0 })),
     error: null,
   };
 }
