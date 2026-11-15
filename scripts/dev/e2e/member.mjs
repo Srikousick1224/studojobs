@@ -33,7 +33,7 @@ try {
 
   // student
   ctx = await context(browser, "student@test.local"); page = await ctx.newPage(); errs = watch(page);
-  await page.goto(`${BASE}/student`); await page.getByText("Welcome back").waitFor({ timeout: 10000 }).catch(() => {});
+  await page.goto(`${BASE}/student`); await page.getByText("Saved opportunities").first().waitFor({ timeout: 10000 }).catch(() => {});
   t.check("dashboard: shows real zero applications", (await page.getByText("Applications sent").count()) === 1);
   t.check("dashboard: lists opportunities", (await page.locator("article").count()) >= 1);
   t.check("dashboard: no sample-data wording", (await page.getByText(/sample/i).count()) === 0);
@@ -50,7 +50,7 @@ try {
   t.check("student: saved state survives reload", (await page.getByRole("button", { name: "Remove from saved" }).count()) === 1);
   await page.goto(`${BASE}/student/saved`); await page.locator("article").first().waitFor({ timeout: 8000 }).catch(() => {});
   t.check("saved page lists the saved job", (await page.locator("article").count()) === 1);
-  await page.goto(`${BASE}/student`); await page.getByText("Welcome back").waitFor({ timeout: 8000 }).catch(() => {});
+  await page.goto(`${BASE}/student`); await page.getByText("Saved opportunities").first().waitFor({ timeout: 8000 }).catch(() => {}); await page.waitForTimeout(1600); // count-up
   t.check("dashboard saved count is 1", (await page.locator("div", { hasText: /^Saved opportunities/ }).filter({ hasText: "1" }).count()) >= 1);
   await page.goto(`${BASE}/student/saved`);
   await page.getByRole("button", { name: "Remove from saved" }).first().click();
@@ -120,6 +120,7 @@ try {
   await page.goto(`${BASE}/admin`); await page.getByText("Platform overview").waitFor({ timeout: 10000 }).catch(() => {});
   const { rows: [{ pub }] } = await db.query("select count(*)::int pub from jobs where status='published'");
   const { rows: [{ open }] } = await db.query("select count(*)::int open from reports where status in ('open','investigating')");
+  await page.waitForTimeout(1600); // numbers on the dashboard count up from 0 when they scroll into view
   const body = await page.locator("body").innerText();
   const num = (label) => Number(new RegExp(`${label}\\s+(\\d+)`).exec(body)?.[1] ?? -1);
   t.check(`admin: published listings = ${pub}`, num("Published listings") === pub, `shown=${num("Published listings")}`);

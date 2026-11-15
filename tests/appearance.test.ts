@@ -44,6 +44,7 @@ function runInitScript(stored: string | null, prefersDark: boolean) {
   const documentElement = {
     setAttribute: (k: string, v: string) => attrs.set(k, v),
     removeAttribute: (k: string) => attrs.delete(k),
+    classList: { add: (c: string) => attrs.set("class:" + c, "1") },
     style: { setProperty: (k: string, v: string) => styles.set(k, v), removeProperty: (k: string) => styles.delete(k) },
   };
   lastStyles = styles;

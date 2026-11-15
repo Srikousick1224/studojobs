@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/Button";
 import { Notice, PageHeader } from "@/components/ui/Misc";
 import { saveJobAction } from "@/lib/stage-e/job-actions";
 import { getMyCompany, listCategories } from "@/lib/stage-e/job-queries";
+import { getEmployerDefaults } from "@/lib/settings/queries";
+import { jobFormDefaults } from "@/lib/settings/schema";
 
 export const metadata: Metadata = { title: "Post a role" };
 
 export default async function NewJobPage() {
   await connection();
-  const [company, categories] = await Promise.all([getMyCompany(), listCategories()]);
+  const [company, categories, prefs] = await Promise.all([getMyCompany(), listCategories(), getEmployerDefaults()]);
   return (
     <>
       <PageHeader title="Post a role" text="Save a draft to finish later, or publish. Every listing is reviewed before it goes live." />
@@ -21,7 +23,7 @@ export default async function NewJobPage() {
         </div>
       ) : (
         <div className="max-w-3xl">
-          <JobForm categories={categories} save={saveJobAction} />
+          <JobForm categories={categories} save={saveJobAction} defaults={prefs ? jobFormDefaults(prefs) : undefined} />
         </div>
       )}
     </>

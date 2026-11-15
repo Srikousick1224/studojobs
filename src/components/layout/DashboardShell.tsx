@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/Logo";
 import { logoutAction } from "@/lib/auth/actions";
 import { LogOut } from "lucide-react";
+import { Avatar } from "@/components/ui/Misc";
 
 export interface NavItem {
   href: string;
@@ -17,7 +18,12 @@ export interface NavItem {
 
 export function DashboardShell({ role, items, userName, children }: { role: string; items: NavItem[]; userName?: string; children: ReactNode }) {
   const pathname = usePathname();
-  const isActive = (href: string) => (href === items[0].href ? pathname === href : pathname.startsWith(href));
+  // The longest matching link wins, so "/employer/jobs/new" lights up "Post a role" and not "My jobs" as well.
+  const activeHref = items
+    .filter((i) => (i.href === items[0].href ? pathname === i.href : pathname === i.href || pathname.startsWith(i.href + "/")))
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+  const isActive = (href: string) => href === activeHref;
+  const activeIndex = items.findIndex((i) => i.href === activeHref);
 
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[264px_1fr]">
@@ -25,15 +31,20 @@ export function DashboardShell({ role, items, userName, children }: { role: stri
         <div className="sticky top-0 flex h-screen flex-col p-5">
           <Logo />
           <p className="mt-8 px-3 text-xs font-bold uppercase tracking-wider text-ink-400">{role}</p>
-          <nav aria-label={`${role} navigation`} className="mt-2 flex flex-col gap-1">
+          <nav aria-label={`${role} navigation`} className="relative mt-2 flex flex-col gap-1">
+            <span
+              aria-hidden="true"
+              className="nav-pill absolute inset-x-0 top-0 h-11 rounded-xl bg-brand-50 ring-1 ring-brand-100"
+              style={{ transform: `translateY(${Math.max(activeIndex, 0) * 48}px)`, opacity: activeIndex < 0 ? 0 : 1 }}
+            />
             {items.map((i) => (
               <Link
                 key={i.href}
                 href={i.href}
                 aria-current={isActive(i.href) ? "page" : undefined}
                 className={cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition",
-                  isActive(i.href) ? "bg-brand-50 text-brand-700" : "text-ink-600 hover:bg-ink-50 hover:text-ink-900",
+                  "nav-link relative flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold",
+                  isActive(i.href) ? "text-brand-700" : "text-ink-600 hover:bg-ink-50 hover:text-ink-900",
                 )}
               >
                 <i.icon className="h-5 w-5" aria-hidden="true" />
@@ -42,7 +53,15 @@ export function DashboardShell({ role, items, userName, children }: { role: stri
             ))}
           </nav>
           <div className="mt-auto space-y-1">
-            {userName && <p className="truncate px-3 text-sm font-semibold text-ink-800" title={userName}>{userName}</p>}
+            {userName && (
+              <div className="mb-2 flex items-center gap-3 rounded-xl bg-ink-50 p-2.5">
+                <Avatar name={userName} size={36} square={false} />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-ink-800" title={userName}>{userName}</p>
+                  <p className="flex items-center gap-1.5 text-xs text-ink-500"><span className="pulse-dot h-1.5 w-1.5 rounded-full bg-mint-500" aria-hidden="true" />{role} account</p>
+                </div>
+              </div>
+            )}
             <form action={logoutAction}>
               <button type="submit" className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-ink-600 hover:bg-ink-50 hover:text-ink-900">
                 <LogOut className="h-5 w-5" aria-hidden="true" />

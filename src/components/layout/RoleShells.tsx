@@ -1,6 +1,6 @@
 "use client";
 
-import { Bookmark, LayoutDashboard, PlusCircle, Send, ShieldAlert, UserRound, Users, Briefcase, Building2 } from "lucide-react";
+import { Bookmark, LayoutDashboard, Settings, PlusCircle, Send, ShieldAlert, UserRound, Users, Briefcase, Building2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { DashboardShell, type NavItem } from "@/components/layout/DashboardShell";
 import type { Role } from "@/lib/auth/roles";
@@ -14,6 +14,7 @@ const NAV: Record<Role, { label: string; items: NavItem[] }> = {
       { href: "/student/applications", label: "Applications", icon: Send },
       { href: "/student/saved", label: "Saved", icon: Bookmark },
       { href: "/student/profile", label: "Profile", icon: UserRound },
+      { href: "/student/settings", label: "Settings", icon: Settings },
     ],
   },
   employer: {
@@ -24,6 +25,7 @@ const NAV: Record<Role, { label: string; items: NavItem[] }> = {
       { href: "/employer/company", label: "Company", icon: Building2 },
       { href: "/employer/jobs", label: "My jobs", icon: Briefcase },
       { href: "/employer/jobs/new", label: "Post a role", icon: PlusCircle },
+      { href: "/employer/settings", label: "Settings", icon: Settings },
     ],
   },
   admin: {
