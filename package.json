@@ -17,7 +17,9 @@
     "test:community": "tsx --test tests/community.test.ts",
     "test:tools": "tsx --test tests/tools.test.ts tests/appearance.test.ts",
     "test:member": "tsx --test tests/member.test.ts",
-    "test": "npm run test:db && npm run test:auth && npm run test:stage-e && npm run test:stage-e2 && npm run test:stage-e2-db && npm run test:community-db && npm run test:seed && npm run test:community && npm run test:member && npm run test:tools"
+    "test": "npm run test:db && npm run test:auth && npm run test:stage-e && npm run test:stage-e2 && npm run test:stage-e2-db && npm run test:community-db && npm run test:seed && npm run test:community && npm run test:member && npm run test:settings && npm run test:settings-db && npm run test:tools",
+    "test:settings": "tsx --test tests/settings.test.ts",
+    "test:settings-db": "node supabase/tests/settings-db.test.mjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",

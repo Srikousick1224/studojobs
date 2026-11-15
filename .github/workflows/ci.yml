@@ -10,6 +10,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
+      - name: Generate Next.js route types (LayoutProps etc.)
+        run: npx next typegen
       - run: npx tsc --noEmit
       - run: npm run lint
       - name: Unit and SQL tests (no secrets, no network)

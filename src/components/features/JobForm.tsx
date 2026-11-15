@@ -49,16 +49,20 @@ export const EMPTY_JOB: JobFormDefaults = {
 export function JobForm({
   jobId,
   categories,
-  initial = EMPTY_JOB,
+  initial: initialProp = EMPTY_JOB,
+  defaults,
   save,
   status,
 }: {
   jobId?: string;
   categories: { id: number; name: string }[];
   initial?: JobFormDefaults;
+  /** Employer's saved hiring defaults (type, hours, work mode, level). Used only for a brand-new role. */
+  defaults?: Partial<JobFormDefaults>;
   save: (payload: { jobId?: string; form: Record<string, unknown> }) => Promise<ActionResult>;
   status?: string;
 }) {
+  const initial: JobFormDefaults = { ...initialProp, ...defaults };
   const router = useRouter();
   const [pending, start] = useTransition();
   const [errors, setErrors] = useState<Record<string, string>>({});

@@ -2,6 +2,7 @@ import "server-only";
 import { getViewer } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { listPublicJobsByIds, searchPublicJobs } from "@/lib/stage-e/job-queries";
+import { APPLICATION_STATUSES } from "@/lib/stage-e/status";
 import type { JobListItem } from "@/lib/stage-e/job-view";
 
 export interface ChecklistItem {
@@ -10,6 +11,7 @@ export interface ChecklistItem {
   done: boolean;
 }
 export interface StudentOverview {
+  fullName: string;
   applications: number;
   interviews: number;
   saved: number;
@@ -18,6 +20,8 @@ export interface StudentOverview {
   /** "skills" = matched on the student's skills; "latest" = no skills yet, so newest listings */
   recommendedBy: "skills" | "latest";
   checklist: ChecklistItem[];
+  /** Applications by status, only statuses that have at least one. */
+  pipeline: { status: string; count: number }[];
 }
 
 /** Everything the student dashboard shows, from real rows only (RLS limits each query to this student). */
@@ -26,13 +30,14 @@ export async function getStudentOverview(): Promise<StudentOverview | null> {
   if (!viewer || viewer.role !== "student") return null;
   const supabase = await createClient();
 
-  const [apps, interviews, saved, profile, skillRows, resumes] = await Promise.all([
+  const [apps, interviews, saved, profile, skillRows, resumes, statusRows] = await Promise.all([
     supabase.from("applications").select("id", { count: "exact", head: true }).eq("student_id", viewer.id),
     supabase.from("applications").select("id", { count: "exact", head: true }).eq("student_id", viewer.id).eq("status", "interview_scheduled"),
     supabase.from("saved_jobs").select("job_id", { count: "exact", head: true }).eq("student_id", viewer.id),
     supabase.from("student_profiles").select("headline, college, degree, graduation_year").eq("profile_id", viewer.id).maybeSingle(),
     supabase.from("student_skills").select("skill_id, skills(name)").eq("student_id", viewer.id).limit(50),
     supabase.from("resumes").select("id", { count: "exact", head: true }).eq("student_id", viewer.id),
+    supabase.from("applications").select("status").eq("student_id", viewer.id).limit(1000),
   ]);
 
   const skillIds: number[] = [];
@@ -64,5 +69,9 @@ export async function getStudentOverview(): Promise<StudentOverview | null> {
     { key: "resume", label: "Upload your resume", done: (resumes.count ?? 0) > 0 },
   ];
 
-  return { applications: apps.count ?? 0, interviews: interviews.count ?? 0, saved: saved.count ?? 0, skills, recommended, recommendedBy, checklist };
+  const byStatus = new Map<string, number>();
+  for (const r of statusRows.data ?? []) byStatus.set(String(r.status), (byStatus.get(String(r.status)) ?? 0) + 1);
+  const pipeline = APPLICATION_STATUSES.filter((st) => byStatus.has(st)).map((status) => ({ status, count: byStatus.get(status) ?? 0 }));
+
+  return { fullName: viewer.fullName, pipeline, applications: apps.count ?? 0, interviews: interviews.count ?? 0, saved: saved.count ?? 0, skills, recommended, recommendedBy, checklist };
 }
