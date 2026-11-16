@@ -19,6 +19,8 @@ export const verificationDecisionInput = z.object({
 export const moderationDecisionInput = z.object({
   jobId: uuid,
   decision: z.enum(MODERATION_DECISIONS, { error: "Invalid decision." }),
+  /** The listing version the moderator reviewed (migration 009). Optional so the screen also works before 009 is applied. */
+  reviewedVersion: z.number().int().min(1).optional(),
 });
 
 export const reportDecisionInput = z.object({

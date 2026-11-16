@@ -1,6 +1,6 @@
 "use client";
 
-import { Bookmark, LayoutDashboard, Settings, PlusCircle, Send, ShieldAlert, UserRound, Users, Briefcase, Building2 } from "lucide-react";
+import { Bell, Bookmark, LayoutDashboard, Settings, PlusCircle, Send, ShieldAlert, UserRound, Users, Briefcase, Building2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { DashboardShell, type NavItem } from "@/components/layout/DashboardShell";
 import type { Role } from "@/lib/auth/roles";
@@ -14,6 +14,7 @@ const NAV: Record<Role, { label: string; items: NavItem[] }> = {
       { href: "/student/applications", label: "Applications", icon: Send },
       { href: "/student/saved", label: "Saved", icon: Bookmark },
       { href: "/student/profile", label: "Profile", icon: UserRound },
+      { href: "/student/notifications", label: "Notifications", icon: Bell },
       { href: "/student/settings", label: "Settings", icon: Settings },
     ],
   },
@@ -25,6 +26,7 @@ const NAV: Record<Role, { label: string; items: NavItem[] }> = {
       { href: "/employer/company", label: "Company", icon: Building2 },
       { href: "/employer/jobs", label: "My jobs", icon: Briefcase },
       { href: "/employer/jobs/new", label: "Post a role", icon: PlusCircle },
+      { href: "/employer/notifications", label: "Notifications", icon: Bell },
       { href: "/employer/settings", label: "Settings", icon: Settings },
     ],
   },
@@ -37,7 +39,8 @@ const NAV: Record<Role, { label: string; items: NavItem[] }> = {
   },
 };
 
-export function RoleShell({ role, userName, children }: { role: Role; userName: string; children: ReactNode }) {
+export function RoleShell({ role, userName, unread = 0, children }: { role: Role; userName: string; unread?: number; children: ReactNode }) {
   const nav = NAV[role];
-  return <DashboardShell role={nav.label} items={nav.items} userName={userName}>{children}</DashboardShell>;
+  const items = nav.items.map((i) => (i.href.endsWith("/notifications") ? { ...i, badge: unread } : i));
+  return <DashboardShell role={nav.label} items={items} userName={userName}>{children}</DashboardShell>;
 }

@@ -15,3 +15,8 @@ export const listingReportInput = z.object({
   reason: z.enum(Object.keys(LISTING_REPORT_REASONS) as [keyof typeof LISTING_REPORT_REASONS, ...(keyof typeof LISTING_REPORT_REASONS)[]], { message: "Choose the closest reason." }),
   details: z.string().trim().min(20, "Please describe what happened (at least 20 characters).").max(2000, "Details can be at most 2000 characters."),
 });
+
+/** Report a whole company (for example an impersonation or a pattern of scam listings), not one listing. Same reasons and limits. */
+export const companyReportInput = listingReportInput.omit({ jobId: true }).extend({
+  companyId: z.uuid({ message: "Choose the company you want to report." }),
+});

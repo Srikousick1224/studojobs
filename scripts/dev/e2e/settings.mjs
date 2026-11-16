@@ -57,7 +57,7 @@ try {
   await page.getByRole("tab", { name: "Account" }).waitFor();
   t.check("student: settings page has 5 tabs", (await page.getByRole("tab").count()) === 5);
   const pill2 = await page.locator(".nav-pill").evaluate((e) => e.style.transform);
-  t.check("student: sidebar pill moved to Settings", pill2 === "translateY(192px)", pill2);
+  t.check("student: sidebar pill moved to Settings", pill2 === "translateY(240px)", pill2);
   // account
   await page.getByLabel("Full name").fill("Asha Kumar"); await page.getByLabel("Phone (optional)").fill("+91 98765 43210");
   await page.getByRole("button", { name: "Save changes" }).click(); await page.getByText("Account details saved.").waitFor({ timeout: 8000 }).catch(() => {});

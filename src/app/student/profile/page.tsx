@@ -1,6 +1,7 @@
 import { connection } from "next/server";
 import type { Metadata } from "next";
 import { ProfileForm } from "@/components/features/ProfileForm";
+import { ResumeManager } from "@/components/features/ResumeManager";
 import { PageHeader } from "@/components/ui/Misc";
 import { getMyProfile } from "@/lib/student/profile";
 
@@ -14,6 +15,7 @@ export default async function ProfilePage() {
     <>
       <PageHeader title="My profile" text="A complete profile gets more attention from employers." />
       <ProfileForm initial={profile} />
+      <ResumeManager resumes={profile.resumes} />
     </>
   );
 }

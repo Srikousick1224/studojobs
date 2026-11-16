@@ -39,6 +39,9 @@ export async function saveProfileAction(payload: unknown): Promise<ActionResult>
   // Skills: find each by name (case-insensitive), create the missing ones, then make the student's list match exactly.
   const wanted = p.skills;
   const ids: number[] = [];
+  // Skills the catalogue does not have and this account may not create. Today anyone can create one; after migration 009
+  // only admins can, and the rest of the profile must still save instead of failing as a whole.
+  const notInCatalogue: string[] = [];
   for (const name of wanted) {
     const find = () => supabase.from("skills").select("id").ilike("name", likeSafe(name)).limit(1).maybeSingle();
     let { data } = await find();
@@ -46,7 +49,10 @@ export async function saveProfileAction(payload: unknown): Promise<ActionResult>
       const ins = await supabase.from("skills").insert({ name }).select("id").single();
       data = ins.data ?? (await find()).data; // a race with another student creating the same skill is fine
     }
-    if (!data) return fail("We could not save one of your skills. Please try again.");
+    if (!data) {
+      notInCatalogue.push(name);
+      continue;
+    }
     ids.push(Number(data.id));
   }
   const { data: current } = await supabase.from("student_skills").select("skill_id").eq("student_id", viewer.id);
@@ -64,5 +70,6 @@ export async function saveProfileAction(payload: unknown): Promise<ActionResult>
 
   revalidatePath("/student");
   revalidatePath("/student/profile");
+  if (notInCatalogue.length) return { ok: true, message: `Profile saved. These skills are not in our list yet, so they were not added: ${notInCatalogue.join(", ")}.` };
   return { ok: true, message: "Profile saved." };
 }

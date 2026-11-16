@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { Suspense } from "react";
-import { BadgeCheck, Globe, MapPin, Users } from "lucide-react";
+import { BadgeCheck, Flag, Globe, MapPin, Users } from "lucide-react";
 import { LiveJobCard } from "@/components/features/LiveJobCard";
 import { Avatar, Notice } from "@/components/ui/Misc";
 import { Badge } from "@/components/ui/Badge";
@@ -56,6 +57,11 @@ async function Body({ params }: { params: Promise<{ slug: string }> }) {
           </div>
         )}
       </section>
+      <p className="border-t border-ink-100 pt-4">
+        <Link href={`/report?company=${encodeURIComponent(company.slug)}`} className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-500 hover:text-rose-600">
+          <Flag className="h-4 w-4" aria-hidden="true" /> Report this company
+        </Link>
+      </p>
     </>
   );
 }

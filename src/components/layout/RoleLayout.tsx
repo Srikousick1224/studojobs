@@ -2,6 +2,7 @@ import { Suspense, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import { RoleShell } from "@/components/layout/RoleShells";
 import { requireRole } from "@/lib/auth/dal";
+import { getUnreadCount } from "@/lib/notifications/queries";
 import type { Role } from "@/lib/auth/roles";
 
 /**
@@ -11,7 +12,8 @@ import type { Role } from "@/lib/auth/roles";
  */
 async function Guard({ role, children }: { role: Role; children: ReactNode }) {
   const viewer = await requireRole(role);
-  return <RoleShell role={role} userName={viewer.fullName || viewer.email}>{children}</RoleShell>;
+  const unread = role === "admin" ? 0 : await getUnreadCount();
+  return <RoleShell role={role} userName={viewer.fullName || viewer.email} unread={unread}>{children}</RoleShell>;
 }
 
 export function RoleLayout({ role, children }: { role: Role; children: ReactNode }) {

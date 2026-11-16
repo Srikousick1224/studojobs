@@ -12,9 +12,10 @@ Owner: Harish (founder). Written 2026-11-15, after Stage E7. This plan is honest
 | Admin dashboard (moderation, reports) | Built. Tested on local stand-in. |
 | Motion system (Apple-style scroll story, reveals, count-ups) | Built (Stage E7). Chromium only. |
 | Migrations 001-007 | Applied to the real Supabase project "studojob". |
-| Migrations 008-009 (job-moderation hardening), 010-011 (community), 012 (user settings) | **Written, not applied anywhere real.** |
+| Migrations 009 (job-moderation hardening v5), 010-011 (community), 012 (user settings), 013 (application auto-reply) | **Written and tested on PGlite / local stand-in only. Not applied anywhere real.** Migration 008 is skipped (009 contains it). |
 | Real listings on the live site | **0** (no admin exists, so nothing can be approved). |
-| Resume upload, email sending, interview scheduling UI, rate limiting, CSP, account export/delete | **Not built.** |
+| **Stage E8 (2026-11-15/16)** resumes UI, interview scheduling, notification centre, auto-reply, rate limiting, CSP, company reports, "download my data", staging runbook, accessibility scan | **Built. Tested on unit tests, PGlite and the local stand-in. Not tested on real Supabase.** See `docs/STAGE_E8_REPORT.md`. |
+| Email sending, account deletion, Lighthouse/mobile-device/screen-reader tests, nonce-based CSP, shared (multi-server) rate limiting | **Not built / not done.** |
 
 ## 2. Rules we keep (from the project instructions)
 1. Extend the existing design (violet + mint); never redesign working screens.

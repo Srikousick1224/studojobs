@@ -14,6 +14,8 @@ export interface NavItem {
   href: string;
   label: string;
   icon: LucideIcon;
+  /** Small count bubble (e.g. unread notifications). Hidden when 0. */
+  badge?: number;
 }
 
 export function DashboardShell({ role, items, userName, children }: { role: string; items: NavItem[]; userName?: string; children: ReactNode }) {
@@ -49,6 +51,7 @@ export function DashboardShell({ role, items, userName, children }: { role: stri
               >
                 <i.icon className="h-5 w-5" aria-hidden="true" />
                 {i.label}
+                {!!i.badge && <span className="ml-auto rounded-full bg-brand-500 px-2 py-0.5 text-[11px] font-bold text-white" aria-label={`${i.badge} unread`}>{i.badge > 99 ? "99+" : i.badge}</span>}
               </Link>
             ))}
           </nav>
@@ -102,6 +105,7 @@ export function DashboardShell({ role, items, userName, children }: { role: stri
               >
                 <i.icon className="h-4 w-4" aria-hidden="true" />
                 {i.label}
+                {!!i.badge && <span className="rounded-full bg-mint-500 px-1.5 text-[11px] font-bold text-white" aria-label={`${i.badge} unread`}>{i.badge > 99 ? "99+" : i.badge}</span>}
               </Link>
             ))}
           </nav>

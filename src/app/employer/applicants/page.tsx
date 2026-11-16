@@ -7,6 +7,8 @@ import { Avatar, EmptyState, Notice, PageHeader } from "@/components/ui/Misc";
 import { Users } from "lucide-react";
 import { employerSetApplicationStatusAction } from "@/lib/stage-e/actions";
 import { getResumeLinkAction } from "@/lib/stage-e/job-actions";
+import { InterviewPanel } from "@/components/features/InterviewPanel";
+import { listUpcomingInterviews } from "@/lib/stage-e/interview-queries";
 import { ResumeLinkButton } from "@/components/features/ResumeLinkButton";
 import { daysSince } from "@/lib/stage-e/format";
 import { listEmployerApplications } from "@/lib/stage-e/queries";
@@ -24,7 +26,7 @@ const ACTION_LABEL: Partial<Record<ApplicationStatus, string>> = {
 
 export default async function ApplicantsPage() {
   await connection();
-  const { rows, error } = await listEmployerApplications();
+  const [{ rows, error }, interviews] = await Promise.all([listEmployerApplications(), listUpcomingInterviews()]);
 
   return (
     <>
@@ -71,6 +73,9 @@ export default async function ApplicantsPage() {
                   </div>
                 </div>
               </div>
+              {["under_review", "shortlisted", "interview_scheduled"].includes(a.status) || interviews.has(a.id) ? (
+                <InterviewPanel applicationId={a.id} interviews={interviews.get(a.id) ?? []} canSchedule={["under_review", "shortlisted", "interview_scheduled"].includes(a.status)} />
+              ) : null}
             </Card>
           );
         })}

@@ -171,12 +171,14 @@ export function PaletteButton() {
     <button
       type="button"
       onClick={() => window.dispatchEvent(new Event(OPEN_PALETTE_EVENT))}
-      aria-label="Open command palette"
+      aria-keyshortcuts="Control+K Meta+K"
+      title="Open the command palette (Ctrl K)"
       className="flex h-10 items-center gap-2 rounded-lg px-2.5 text-sm font-semibold text-ink-500 ring-1 ring-ink-200 transition hover:bg-ink-100 hover:text-ink-900 active:scale-95"
     >
       <Search className="h-4 w-4" aria-hidden="true" />
-      <span className="hidden lg:inline">Search</span>
-      <kbd className="hidden rounded bg-ink-100 px-1.5 py-0.5 text-[11px] font-semibold lg:inline">Ctrl K</kbd>
+      {/* The visible word is also the accessible name (WCAG 2.5.3 "label in name"); on small screens it is read aloud only. */}
+      <span className="sr-only lg:not-sr-only">Search</span>
+      <kbd aria-hidden="true" className="hidden rounded bg-ink-100 px-1.5 py-0.5 text-[11px] font-semibold lg:inline">Ctrl K</kbd>
     </button>
   );
 }

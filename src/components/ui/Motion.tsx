@@ -174,7 +174,7 @@ export function ScrollStory({ steps, className }: { steps: StoryStep[]; classNam
         {steps.map((s, i) => (
           <Reveal key={s.title} className="grid items-center gap-6 md:grid-cols-2">
             <div>
-              <p className="text-sm font-bold uppercase tracking-wider text-brand-600">{String(i + 1).padStart(2, "0")} · {s.kicker}</p>
+              <p className="story-kicker text-sm font-bold uppercase tracking-wider text-brand-600">{String(i + 1).padStart(2, "0")} · {s.kicker}</p>
               <h3 className="mt-2 text-3xl font-extrabold">{s.title}</h3>
               <p className="mt-3 text-lg text-ink-600">{s.text}</p>
             </div>
@@ -193,7 +193,7 @@ export function ScrollStory({ steps, className }: { steps: StoryStep[]; classNam
             <ol className="space-y-7">
               {steps.map((s, i) => (
                 <li key={s.title} className={cn("story-step", i === active ? "is-active" : i < active ? "is-past" : "")} aria-current={i === active ? "step" : undefined}>
-                  <p className="text-sm font-bold uppercase tracking-wider text-brand-600">{String(i + 1).padStart(2, "0")} · {s.kicker}</p>
+                  <p className="story-kicker text-sm font-bold uppercase tracking-wider text-brand-600">{String(i + 1).padStart(2, "0")} · {s.kicker}</p>
                   <h3 className="mt-1 text-3xl font-extrabold sm:text-5xl">{s.title}</h3>
                   <p className="story-text mt-2 max-w-md text-lg text-ink-600">{s.text}</p>
                 </li>

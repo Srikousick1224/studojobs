@@ -490,8 +490,12 @@ html.js .rv.rv-in { opacity: 1; transform: none; filter: none; }
 .switch[aria-checked="true"]:active::after { transform: translateX(0.85rem); }
 
 /* ScrollStory: pinned scene, text sharpens as it becomes the active step */
-.story-step { opacity: 0.22; transform: scale(0.96); transform-origin: left center; filter: blur(1.5px); transition: opacity 0.6s var(--ease-out-expo), transform 0.6s var(--ease-out-expo), filter 0.6s var(--ease-out-expo); }
+/* Accessibility: upcoming steps stay readable (large headings keep >= 3:1 contrast at this opacity). The small kicker line is
+   collapsed until its step is active, because small text cannot stay readable at a heavy fade (it needs 4.5:1). */
+.story-step { opacity: 0.55; transform: scale(0.96); transform-origin: left center; filter: blur(1px); transition: opacity 0.6s var(--ease-out-expo), transform 0.6s var(--ease-out-expo), filter 0.6s var(--ease-out-expo); }
 .story-step.is-active { opacity: 1; transform: none; filter: none; }
+.story-step .story-kicker { max-height: 0; overflow: hidden; opacity: 0; transition: max-height 0.5s var(--ease-out-expo), opacity 0.4s; }
+.story-step.is-active .story-kicker { max-height: 2rem; opacity: 1; }
 .story-step .story-text { max-height: 0; overflow: hidden; opacity: 0; transition: max-height 0.7s var(--ease-out-expo), opacity 0.5s; }
 .story-step.is-active .story-text { max-height: 9rem; opacity: 1; }
 .story-bar { transform-origin: left; transform: scaleX(var(--p, 0)); }
@@ -509,10 +513,12 @@ html.js .rv.rv-in { opacity: 1; transform: none; filter: none; }
 @media (prefers-reduced-motion: reduce) {
   html.js:not([data-motion="full"]) .rv { opacity: 1 !important; transform: none !important; filter: none !important; }
   :root:not([data-motion="full"]) .story-step { opacity: 1; filter: none; transform: none; }
+  :root:not([data-motion="full"]) .story-step .story-kicker { max-height: none; opacity: 1; }
   :root:not([data-motion="full"]) .text-sweep { animation: none; color: var(--color-brand-600); background: none; }
 }
 :root[data-motion="reduce"] .rv, :root[data-motion="reduce"].js .rv { opacity: 1 !important; transform: none !important; filter: none !important; }
 :root[data-motion="reduce"] .story-step { opacity: 1; filter: none; transform: none; }
+:root[data-motion="reduce"] .story-step .story-kicker { max-height: none; opacity: 1; }
 :root[data-motion="reduce"] .text-sweep { animation: none; color: var(--color-brand-600); background: none; }
 :root[data-motion="reduce"] .hero-in, :root[data-motion="reduce"] .page-in { animation: none; }
 :root[data-motion="reduce"] .nav-link:hover { transform: none; }
