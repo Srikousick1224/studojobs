@@ -17,9 +17,12 @@
     "test:community": "tsx --test tests/community.test.ts",
     "test:tools": "tsx --test tests/tools.test.ts tests/appearance.test.ts",
     "test:member": "tsx --test tests/member.test.ts",
-    "test": "npm run test:db && npm run test:auth && npm run test:stage-e && npm run test:stage-e2 && npm run test:stage-e2-db && npm run test:community-db && npm run test:seed && npm run test:community && npm run test:member && npm run test:settings && npm run test:settings-db && npm run test:tools",
+    "test": "npm run test:db && npm run test:auth && npm run test:stage-e && npm run test:stage-e2 && npm run test:stage-e2-db && npm run test:community-db && npm run test:seed && npm run test:community && npm run test:member && npm run test:settings && npm run test:resume-limits && npm run test:trust && npm run test:settings-db && npm run test:migration-009 && npm run test:tools",
     "test:settings": "tsx --test tests/settings.test.ts",
-    "test:settings-db": "node supabase/tests/settings-db.test.mjs"
+    "test:settings-db": "node supabase/tests/settings-db.test.mjs",
+    "test:resume-limits": "tsx --test tests/resume-and-limits.test.ts",
+    "test:trust": "tsx --test tests/trust-and-safety.test.ts",
+    "test:migration-009": "node supabase/tests/migration-009.test.mjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",
@@ -40,6 +43,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "axe-core": "^4.14.0",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
     "pg": "^8.23.1",

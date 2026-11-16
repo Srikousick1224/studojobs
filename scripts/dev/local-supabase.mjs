@@ -3,6 +3,8 @@
  *   - PostgREST  (/rest/v1/*)  -> translated to SQL and run against a REAL Postgres as role anon/authenticated,
  *                                 so Row Level Security and the guard triggers decide every result.
  *   - GoTrue     (/auth/v1/*)  -> only what the app calls: user lookup, password sign-in, refresh, logout.
+ *   - Storage    (/storage/v1/*) -> upload, delete and signed links. Access is decided by the REAL storage.objects
+ *                                 policies from migration 005 (run as the caller); file bytes are kept in memory.
  *
  * It is NOT Supabase. It implements the subset of PostgREST that StudoJob's code uses (select with embeds,
  * eq/neq/gt/gte/lt/lte/like/ilike/is/in/or/not/fts filters, order, limit/offset, count, single object,
@@ -412,6 +414,54 @@ async function handleAuth(req, url, body) {
   return { status: 404, json: { code: 404, error_code: "not_found", msg: `local stand-in has no ${req.method} /auth/v1/${route}` } };
 }
 
+/* ------------------------------------------------------------------------------------ storage */
+const files = new Map(); // "bucket/path" -> Buffer (memory only; gone when the stand-in stops)
+const readRaw = (req) => new Promise((resolve) => { const parts = []; req.on("data", (d) => parts.push(d)); req.on("end", () => resolve(Buffer.concat(parts))); });
+async function handleStorage(req, url, claims) {
+  const rest = decodeURIComponent(url.pathname.replace(/^\/storage\/v1\//, ""));
+  const raw = req.method === "GET" ? null : await readRaw(req);
+  const json = () => { try { return JSON.parse(raw.toString() || "null"); } catch { return null; } };
+  const err = (status, message) => ({ status, json: { statusCode: String(status), error: message, message } });
+  // signed link download (no auth, like real Storage: the token is the permission)
+  if (req.method === "GET" && rest.startsWith("object/sign/")) {
+    const key = rest.slice("object/sign/".length);
+    const buf = files.get(key);
+    if (!buf || !url.searchParams.get("token")) return err(404, "Object not found");
+    return { status: 200, raw: buf };
+  }
+  const m = /^object\/(sign\/)?([^/]+)\/(.+)$/.exec(rest);
+  if (req.method === "POST" && m && !m[1]) {
+    const [, , bucket, name] = m;
+    const { rows: [b] } = await pool.query("select file_size_limit, allowed_mime_types from storage.buckets where id=$1", [bucket]);
+    if (!b) return err(404, "Bucket not found");
+    const mime = String(req.headers["content-type"] ?? "").split(";")[0];
+    if (b.allowed_mime_types && !b.allowed_mime_types.includes(mime)) return err(415, "mime type " + mime + " is not supported");
+    if (b.file_size_limit && raw.length > b.file_size_limit) return err(413, "The object exceeded the maximum allowed size");
+    try {
+      await withRole(claims, (c) => c.query("insert into storage.objects (bucket_id, name) values ($1,$2)", [bucket, name]));
+    } catch (e) {
+      return err(e.code === "42501" ? 403 : 400, e.code === "42501" ? "new row violates row-level security policy" : e.message);
+    }
+    files.set(`${bucket}/${name}`, raw);
+    return { status: 200, json: { Key: `${bucket}/${name}`, Id: crypto.randomUUID() } };
+  }
+  if (req.method === "POST" && m && m[1]) {
+    const [, , bucket, name] = m;
+    const rows = await withRole(claims, (c) => c.query("select 1 from storage.objects where bucket_id=$1 and name=$2", [bucket, name]).then((r) => r.rows));
+    if (!rows.length) return err(400, "Object not found");
+    return { status: 200, json: { signedURL: `/object/sign/${bucket}/${name}?token=local-${crypto.randomUUID()}` } };
+  }
+  const d = /^object\/([^/]+)$/.exec(rest);
+  if (req.method === "DELETE" && d) {
+    const bucket = d[1];
+    const prefixes = (json()?.prefixes ?? []).map(String);
+    const gone = await withRole(claims, (c) => c.query("delete from storage.objects where bucket_id=$1 and name = any($2) returning name", [bucket, prefixes]).then((r) => r.rows));
+    for (const r of gone) files.delete(`${bucket}/${r.name}`);
+    return { status: 200, json: gone.map((r) => ({ name: r.name, bucket_id: bucket })) };
+  }
+  return err(404, `local stand-in has no ${req.method} /storage/v1/${rest}`);
+}
+
 /* ---------------------------------------------------------------------------------------- server */
 export async function start() {
   await loadMeta();
@@ -427,6 +477,13 @@ export async function start() {
       if (req.method === "OPTIONS") return send({ status: 204, json: null, headers: { "Access-Control-Allow-Headers": "*", "Access-Control-Allow-Methods": "*" } });
       if (url.pathname === "/__health") return send({ status: 200, json: { ok: true } });
       if (url.pathname === "/__reload") { await loadMeta(); return send({ status: 200, json: { ok: true } }); }
+      if (url.pathname.startsWith("/storage/v1/")) {
+        const t = bearer(req);
+        const claims = t && t.includes(".") && !t.startsWith("sb_publishable_") ? verifyJwt(t) : { role: "anon" };
+        const r = await handleStorage(req, url, claims);
+        if (r.raw) { res.writeHead(r.status, { "Content-Type": "application/octet-stream" }); return res.end(r.raw); }
+        return send(r);
+      }
       const body = ["POST", "PATCH", "PUT"].includes(req.method) ? await readBody(req) : null;
       if (url.pathname.startsWith("/auth/v1/")) return send(await handleAuth(req, url, body));
       if (url.pathname.startsWith("/rest/v1")) {

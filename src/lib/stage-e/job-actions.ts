@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth/dal";
+import { rateLimit, tooManyMessage } from "@/lib/security/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { jobFormSchema, toJobColumns } from "./job-schema";
 import { verificationFormSchema } from "./verification-schema";
@@ -132,6 +133,9 @@ export async function applyToJobAction(payload: unknown): Promise<ActionResult> 
     })
     .safeParse(payload);
   if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? "Please check your application.");
+  // 30 applications per hour is far more than a person can send by hand; it only slows scripts.
+  const limit = rateLimit(`apply:${viewer.id}`, 30, 60 * 60 * 1000);
+  if (!limit.ok) return fail(tooManyMessage(limit));
 
   const supabase = await createClient();
   // student_id is always the signed-in user. The guard trigger rejects any other value.

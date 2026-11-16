@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, KeyRound, Palette, ShieldCheck, SlidersHorizontal, UserRound } from "lucide-react";
+import { Bell, Download, KeyRound, Palette, ShieldCheck, SlidersHorizontal, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { AppearanceSettings } from "@/components/features/AppearanceSettings";
@@ -255,6 +255,12 @@ function SecurityTab({ email, usesPassword }: Props) {
         <ResultNote result={out.result} />
         <Button variant="secondary" disabled={out.pending} onClick={() => out.run(signOutEverywhereAction, (r) => r.ok && router.push("/login"))}>
           <KeyRound className="h-4 w-4" aria-hidden="true" /> Sign out on all devices
+        </Button>
+      </SettingsCard>
+
+      <SettingsCard title="Download my data" text="Get a copy of the information stored in your account as a JSON file. Resume files are not included; download those from your Profile page.">
+        <Button href="/api/account/export" variant="secondary" download>
+          <Download className="h-4 w-4" aria-hidden="true" /> Download my data
         </Button>
       </SettingsCard>
 

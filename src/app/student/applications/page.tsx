@@ -1,6 +1,10 @@
 import { connection } from "next/server";
 import type { Metadata } from "next";
 import { Send } from "lucide-react";
+import { CalendarClock, MapPin, Phone, Video } from "lucide-react";
+import { LocalTime } from "@/components/features/LocalTime";
+import { listUpcomingInterviews } from "@/lib/stage-e/interview-queries";
+import { INTERVIEW_MODE_LABEL } from "@/lib/stage-e/interview-schema";
 import { ActionButton } from "@/components/features/ActionButton";
 import { ApplicationStatusBadge } from "@/components/features/ApplicationStatusBadge";
 import { Button } from "@/components/ui/Button";
@@ -16,7 +20,7 @@ export const metadata: Metadata = { title: "My applications" };
 
 export default async function ApplicationsPage() {
   await connection();
-  const { rows, error } = await listStudentApplications();
+  const [{ rows, error }, interviews] = await Promise.all([listStudentApplications(), listUpcomingInterviews()]);
 
   return (
     <>
@@ -65,6 +69,20 @@ export default async function ApplicationsPage() {
                   ))}
                 </ol>
               )}
+              {(interviews.get(a.id) ?? []).map((i) => {
+                const Icon = i.mode === "video" ? Video : i.mode === "phone" ? Phone : MapPin;
+                return (
+                  <div key={i.id} className="mt-4 flex flex-wrap items-center gap-3 rounded-xl bg-brand-50 px-4 py-3 text-sm ring-1 ring-brand-100">
+                    <CalendarClock className="h-5 w-5 text-brand-600" aria-hidden="true" />
+                    <div className="min-w-0 flex-1 basis-56">
+                      <p className="font-semibold text-ink-900">Interview: <LocalTime iso={i.scheduledAt} /> · {i.durationMinutes} min</p>
+                      <p className="flex items-center gap-1.5 text-xs text-ink-600"><Icon className="h-3.5 w-3.5" aria-hidden="true" />{INTERVIEW_MODE_LABEL[i.mode]}{i.location ? ` · ${i.location}` : ""}</p>
+                      {i.notes && <p className="mt-1 text-xs text-ink-600">Note from the employer: {i.notes}</p>}
+                    </div>
+                    {i.meetingLink && <Button href={i.meetingLink} size="sm">Join meeting</Button>}
+                  </div>
+                );
+              })}
               {a.status === "rejected" && (
                 <p className="mt-4 text-sm text-ink-500">This employer chose to move forward with other candidates. Keep going, it takes most students several applications.</p>
               )}

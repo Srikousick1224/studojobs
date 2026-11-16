@@ -91,16 +91,33 @@ export async function adminModerateListingAction(payload: unknown): Promise<Acti
   await requireRole("admin");
   const parsed = moderationDecisionInput.safeParse(payload);
   if (!parsed.success) return fail("Invalid decision.");
-  const { jobId, decision } = parsed.data;
+  const { jobId, decision, reviewedVersion } = parsed.data;
 
   const supabase = await createClient();
+
+  // After migration 009 an admin can publish a reviewed listing ONLY through approve_job(), which checks that the
+  // listing was not edited after it was opened. Before 009 that function does not exist, so we fall back to the
+  // plain status update (the only way that older database allows).
+  if (decision === "published" && reviewedVersion !== undefined) {
+    const { error: rpcError } = await supabase.rpc("approve_job", { p_job: jobId, p_reviewed_version: reviewedVersion });
+    if (!rpcError) {
+      revalidatePath("/admin/moderation");
+      revalidatePath("/admin");
+      return { ok: true, message: "Listing published." };
+    }
+    if (rpcError.code === "40001") return fail("This listing changed after you opened it. Reload the page and review the latest version.");
+    if (rpcError.code === "P0001") return fail("This listing is no longer waiting for review.");
+    const functionMissing = rpcError.code === "PGRST202" || rpcError.code === "42883";
+    if (!functionMissing) return fail("The decision could not be saved.");
+  }
+
   const { data, error } = await supabase
     .from("jobs")
     .update({ status: decision })
     .eq("id", jobId)
     .eq("status", "pending_review")
     .select("id");
-  if (error) return fail("The decision could not be saved.");
+  if (error) return fail(error.code === "42501" ? "This database requires approving through the reviewed-version check. Reload the page and try again." : "The decision could not be saved.");
   if (!data || data.length === 0) return fail("This listing is no longer waiting for review.");
 
   revalidatePath("/admin/moderation");

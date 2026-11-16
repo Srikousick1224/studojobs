@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { FileText, X } from "lucide-react";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input, Select, Textarea } from "@/components/ui/Field";
 import { Notice } from "@/components/ui/Misc";
@@ -99,18 +99,6 @@ export function ProfileForm({ initial }: { initial: MyProfile }) {
             ))}
           </p>
         )}
-      </div>
-
-      <div>
-        <p className="text-sm font-semibold text-ink-800">Resume</p>
-        {initial.resumes.length > 0 ? (
-          <ul className="mt-2 space-y-1.5 text-sm text-ink-700">
-            {initial.resumes.map((r) => <li key={r.id} className="flex items-center gap-2"><FileText className="h-4 w-4 text-brand-600" aria-hidden="true" />{r.label} <span className="text-ink-500">({r.fileName})</span></li>)}
-          </ul>
-        ) : (
-          <p className="mt-1.5 text-sm text-ink-500">No resume yet.</p>
-        )}
-        <p className="mt-1.5 text-xs text-ink-500">Resume upload is coming next. It needs private cloud storage, which we will test on the real Supabase project first.</p>
       </div>
 
       {result && <Notice tone={result.ok ? "success" : "error"}>{result.message}</Notice>}

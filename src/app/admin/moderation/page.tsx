@@ -73,7 +73,7 @@ export default async function ModerationPage() {
               <p className="mt-0.5 text-sm text-ink-600">{j.companies?.name ?? "Company unavailable"} · {j.location}</p>
             </div>
             <div className="flex gap-2">
-              <ActionButton action={adminModerateListingAction} payload={{ jobId: j.id, decision: "published" }} label="Publish" variant="mint" />
+              <ActionButton action={adminModerateListingAction} payload={{ jobId: j.id, decision: "published", ...(j.content_version ? { reviewedVersion: j.content_version } : {}) }} label="Publish" variant="mint" />
               <ActionButton action={adminModerateListingAction} payload={{ jobId: j.id, decision: "rejected" }} label="Reject" variant="danger" confirm="Reject this listing?" />
             </div>
           </Card>

@@ -12,7 +12,7 @@ export async function getMyProfile(): Promise<MyProfile | null> {
     supabase.from("student_profiles").select("headline, bio, college, degree, graduation_year, location").eq("profile_id", viewer.id).maybeSingle(),
     supabase.from("student_skills").select("skills(name)").eq("student_id", viewer.id).limit(50),
     supabase.from("skills").select("name").order("name").limit(80),
-    supabase.from("resumes").select("id, label, file_name").eq("student_id", viewer.id).order("created_at", { ascending: false }).limit(10),
+    supabase.from("resumes").select("id, label, file_name, is_default, size_bytes, created_at").eq("student_id", viewer.id).order("created_at", { ascending: false }).limit(10),
   ]);
   const skills = (ss ?? []).flatMap((r) => {
     const rel = r.skills as unknown as { name?: string } | { name?: string }[] | null;
@@ -30,6 +30,6 @@ export async function getMyProfile(): Promise<MyProfile | null> {
     location: sp?.location ?? "",
     skills,
     suggestions: (all ?? []).map((s) => String(s.name)).filter((n) => !have.has(n.toLowerCase())).slice(0, 14),
-    resumes: (rs ?? []).map((r) => ({ id: String(r.id), label: String(r.label), fileName: String(r.file_name) })),
+    resumes: (rs ?? []).map((r) => ({ id: String(r.id), label: String(r.label), fileName: String(r.file_name), isDefault: Boolean(r.is_default), sizeBytes: Number(r.size_bytes), createdAt: String(r.created_at) })),
   };
 }

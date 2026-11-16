@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getViewer } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
+import { rateLimit, tooManyMessage } from "@/lib/security/rate-limit";
 import type { ActionResult } from "@/lib/stage-e/result";
 import { accountInput, emailInput, employerSettings, passwordInput, studentSettings } from "./schema";
 
@@ -33,7 +34,10 @@ export async function updateAccountAction(payload: unknown): Promise<ActionResul
 export async function changePasswordAction(payload: unknown): Promise<ActionResult> {
   const parsed = passwordInput.safeParse(payload);
   if (!parsed.success) return fail(parsed.error.issues[0]?.message ?? "Please check the form.");
-  if (!(await me())) return fail("Please sign in again.");
+  const viewer = await me();
+  if (!viewer) return fail("Please sign in again.");
+  const limit = rateLimit(`password:${viewer.id}`, 5, 60 * 60 * 1000);
+  if (!limit.ok) return fail(tooManyMessage(limit));
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
   if (error) return fail(/same|different/i.test(error.message) ? "Choose a password you have not used before." : "We could not change your password. Please try again.");
@@ -47,6 +51,8 @@ export async function changeEmailAction(payload: unknown): Promise<ActionResult>
   const viewer = await me();
   if (!viewer) return fail("Please sign in again.");
   if (parsed.data.email === viewer.email.toLowerCase()) return fail("That is already your email address.");
+  const limit = rateLimit(`email-change:${viewer.id}`, 5, 60 * 60 * 1000);
+  if (!limit.ok) return fail(tooManyMessage(limit));
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ email: parsed.data.email });
   if (error) return fail("We could not start the email change. Please try again.");

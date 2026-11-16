@@ -23,16 +23,33 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   size?: Size;
   href?: string;
+  /** Plain download link (a file or API route). Next.js <Link> must not be used for these: it would try a page navigation. */
+  download?: boolean;
   children: ReactNode;
 }
 
-export function Button({ variant = "primary", size = "md", href, className, children, ...rest }: Props) {
+export function Button({ variant = "primary", size = "md", href, download, className, children, ...rest }: Props) {
   const classes = cn(
     "inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition duration-200 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none",
     variants[variant],
     sizes[size],
     className,
   );
+  if (href && download) {
+    return (
+      <a href={href} download className={classes}>
+        {children}
+      </a>
+    );
+  }
+  if (href && /^https?:\/\//i.test(href)) {
+    // External address (e.g. an interview meeting link): plain anchor, new tab, no access to our page.
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" className={classes}>
+        {children}
+      </a>
+    );
+  }
   if (href) {
     return (
       <Link href={href} className={classes}>

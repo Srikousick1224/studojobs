@@ -27,5 +27,5 @@ export interface MyProfile {
   location: string;
   skills: string[];
   suggestions: string[];
-  resumes: { id: string; label: string; fileName: string }[];
+  resumes: { id: string; label: string; fileName: string; isDefault: boolean; sizeBytes: number; createdAt: string }[];
 }

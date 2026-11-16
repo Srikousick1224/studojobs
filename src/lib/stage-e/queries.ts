@@ -251,6 +251,8 @@ const pendingJobRow = z.object({
   type: z.string(),
   location: z.string(),
   created_at: z.string(),
+  /** Present only after migration 009 (job moderation hardening). The reviewer sends it back so a listing edited meanwhile is not approved unseen. */
+  content_version: z.number().int().optional(),
   companies: z.object({ name: z.string() }).nullable(),
 });
 export type PendingJob = z.output<typeof pendingJobRow>;
@@ -282,12 +284,13 @@ export async function listPendingVerifications(): Promise<Result<PendingVerifica
 export async function listListingsAwaitingReview(): Promise<Result<PendingJob>> {
   if (!isSupabaseConfigured()) return { rows: [], error: NOT_CONFIGURED_MESSAGE };
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("jobs")
-    .select("id, title, type, location, created_at, companies(name)")
-    .eq("status", "pending_review")
-    .order("created_at", { ascending: true })
-    .limit(100);
+  const build = (columns: string) =>
+    supabase.from("jobs").select(columns).eq("status", "pending_review").order("created_at", { ascending: true }).limit(100);
+  let { data, error } = await build("id, title, type, location, created_at, content_version, companies(name)");
+  // Before migration 009 the column does not exist (Postgres 42703 / PostgREST says so): ask again without it.
+  if (error && (error.code === "42703" || /content_version/i.test(error.message))) {
+    ({ data, error } = await build("id, title, type, location, created_at, companies(name)"));
+  }
   if (error) return { rows: [], error: GENERIC_ERROR };
   return { rows: parseRows(pendingJobRow, data), error: null };
 }

@@ -16,8 +16,8 @@ export function ActionButton({
   variant = "secondary",
   confirm,
 }: {
-  action: (payload: Record<string, string>) => Promise<ActionResult>;
-  payload: Record<string, string>;
+  action: (payload: Record<string, string | number>) => Promise<ActionResult>;
+  payload: Record<string, string | number>;
   label: string;
   variant?: "primary" | "secondary" | "mint" | "danger" | "ghost";
   confirm?: string;

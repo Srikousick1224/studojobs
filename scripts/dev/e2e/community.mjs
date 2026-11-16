@@ -26,9 +26,12 @@ try {
   await page.waitForURL(/\/community\/[0-9a-f-]{36}/);
   await page.waitForLoadState("networkidle").catch(() => {});
   await page.getByLabel("Write a comment").fill("Practice joins and GROUP BY first.");
+  const t0 = Date.now();
   await page.getByRole("button", { name: "Comment" }).click();
-  await page.getByText("Practice joins and GROUP BY first.").waitFor({ timeout: 8000 }).catch(() => {});
-  t.check("comment is shown", await page.getByText("Practice joins and GROUP BY first.").count() === 1);
+  // The screen swaps the temporary comment for the saved one, so the text can vanish for a moment: poll until it settles.
+  let shown = 0;
+  for (let k = 0; k < 32 && shown !== 1; k++) { shown = await page.getByText("Practice joins and GROUP BY first.").count(); if (shown !== 1) await page.waitForTimeout(250); }
+  t.check("comment is shown", shown === 1, `count=${shown} after ${Date.now() - t0}ms; body=${(await page.locator("main").innerText()).replace(/\s+/g, " ").slice(-220)}`);
   t.check("comment author name is the real one", await page.getByText("Bala Kumar").count() >= 1);
   // like
   await page.getByRole("button", { name: "Like this post" }).click();
